@@ -11,7 +11,6 @@ use amethyst::renderer::{
 };
 pub use part::*;
 use serde::*;
-use rand::Rng;
 
 #[derive(Serialize, Deserialize, PrefabData)]
 pub struct SpriteAnimation {
@@ -23,12 +22,11 @@ pub struct SpriteAnimation {
 }
 
 impl SpriteAnimation {
-    pub fn new(cells: Option<SpriteSheetPrefab>, render: Option<SpriteRenderPrefab>) -> Self {
-        let mut transform = Transform::default();
-        let mut range = rand::thread_rng();
-        let x: f32 = range.gen_range(-100., 100.);
-        let y: f32 = range.gen_range(-100., 100.);
-        transform.set_translation_xyz(x, y, 1.0);
+    pub fn new(
+        cells: Option<SpriteSheetPrefab>,
+        render: Option<SpriteRenderPrefab>,
+        transform: Transform,
+    ) -> Self {
         SpriteAnimation {
             sprite_hierarchy: None,
             transform_hierarchy: None,
@@ -36,5 +34,9 @@ impl SpriteAnimation {
             render,
             transform,
         }
+    }
+
+    pub fn set_transform_hierarchy(&mut self, transform_hierarchy: AnimationHierarchyPrefab<Transform>){
+        self.transform_hierarchy = transform_hierarchy.into();
     }
 }
