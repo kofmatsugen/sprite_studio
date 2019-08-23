@@ -7,3 +7,5 @@ edition = "2018"
 [dependencies]
 serde = { version = "*", features = ["derive"] }
 amethyst = {git = "https://github.com/amethyst/amethyst.git", features = ["vulkan"] }
+itertools="*"
+ron="*"
