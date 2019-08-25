@@ -9,11 +9,15 @@ use itertools::izip;
 use key_frame::{KeyFrame, KeyFrameBuilder};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
+pub type SpriteAnimation<U> = Vec<TimeLine<U>>;
+
 #[derive(Serialize, Deserialize)]
 pub struct TimeLine<U>
 where
     U: FromUser + Serialize,
 {
+    id: usize,
+    parent: Option<usize>,
     #[serde(bound(
         serialize = "Vec<KeyFrame<U>>: Serialize",
         deserialize = "Vec<KeyFrame<U>>: Deserialize<'de>"
@@ -170,12 +174,14 @@ impl TimeLineBuilder {
         self.visible.push(visible.into());
     }
 
-    pub fn build<U>(mut self) -> TimeLine<U>
+    pub fn build<U>(mut self, id: usize, parent: impl Into<Option<usize>>) -> TimeLine<U>
     where
         U: FromUser + Serialize,
     {
         let mut timeline = TimeLine {
             key_frames: Vec::with_capacity(self.frame_count),
+            id: id,
+            parent: parent.into(),
         };
 
         // フレームカウントに満たない場合はNoneで埋める
