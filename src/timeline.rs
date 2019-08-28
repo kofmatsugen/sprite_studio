@@ -3,13 +3,52 @@ mod key_frame;
 
 pub use from_user::FromUser;
 
-use amethyst::core::Transform;
+use amethyst::{
+    assets::{Asset, Handle},
+    core::Transform,
+    ecs::DenseVecStorage,
+};
 use from_user::NonDecodedUser;
 use itertools::izip;
 use key_frame::{KeyFrame, KeyFrameBuilder};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-pub type SpriteAnimation<U> = Vec<TimeLine<U>>;
+#[derive(Serialize, Deserialize, Default)]
+pub struct SpriteAnimation<U>
+where
+    U: FromUser + Serialize,
+{
+    #[serde(bound(
+        serialize = "Vec<TimeLine<U>>: Serialize",
+        deserialize = "Vec<TimeLine<U>>: Deserialize<'de>"
+    ))]
+    timelines: Vec<TimeLine<U>>,
+}
+
+pub type SpriteAnimationHandle<U> = Handle<SpriteAnimation<U>>;
+
+impl<U> SpriteAnimation<U>
+where
+    U: FromUser + Serialize,
+{
+    pub fn add_timeline(&mut self, timeline: TimeLine<U>) {
+        self.timelines.push(timeline);
+    }
+
+    pub fn timelines(&self) -> impl Iterator<Item = &TimeLine<U>> {
+        self.timelines.iter()
+    }
+}
+
+impl<U> Asset for SpriteAnimation<U>
+where
+    U: 'static + FromUser + Serialize + Sync + Send,
+{
+    const NAME: &'static str = "SPRITE_ANIMATION";
+
+    type Data = Self;
+    type HandleStorage = DenseVecStorage<Handle<Self>>;
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct TimeLine<U>
@@ -29,6 +68,14 @@ impl<U> TimeLine<U>
 where
     U: FromUser + Serialize + DeserializeOwned,
 {
+    pub fn part_id(&self) -> usize {
+        self.id
+    }
+
+    pub fn parent_id(&self) -> Option<usize> {
+        self.parent
+    }
+
     pub fn users(&self) -> impl Iterator<Item = Option<&U>> {
         self.key_frames.iter().map(|k| k.user())
     }
