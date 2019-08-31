@@ -13,12 +13,13 @@ use itertools::izip;
 use key_frame::{KeyFrame, KeyFrameBuilder};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct SpriteAnimation<U>
 where
     U: FromUser + Serialize,
 {
     fps: u32,
+    total_frame: usize,
     #[serde(bound(
         serialize = "Vec<TimeLine<U>>: Serialize",
         deserialize = "Vec<TimeLine<U>>: Deserialize<'de>"
@@ -32,12 +33,16 @@ impl<U> SpriteAnimation<U>
 where
     U: FromUser + Serialize,
 {
-    pub fn add_timeline(&mut self, timeline: TimeLine<U>) {
-        self.timelines.push(timeline);
+    pub fn new(fps: u32, total_frame: usize) -> Self {
+        SpriteAnimation {
+            fps,
+            total_frame,
+            timelines: vec![],
+        }
     }
 
-    pub fn set_fps(&mut self, fps: u32) {
-        self.fps = fps;
+    pub fn add_timeline(&mut self, timeline: TimeLine<U>) {
+        self.timelines.push(timeline);
     }
 
     pub fn fps(&self) -> u32 {
@@ -49,7 +54,7 @@ where
     }
 
     pub fn total_frame(&self) -> usize {
-        self.timelines.len()
+        self.total_frame
     }
 }
 

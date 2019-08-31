@@ -1,5 +1,6 @@
 use amethyst::ecs::{Component, DenseVecStorage};
 
+#[derive(Debug, Clone)]
 pub struct AnimationTime {
     current_time: f32,
     prev_time: f32,
