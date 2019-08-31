@@ -1,6 +1,6 @@
 use super::from_user::{FromUser, NonDecodedUser};
 use amethyst::core::Transform;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct KeyFrame<U>
@@ -14,11 +14,12 @@ where
     user: Option<U>,
     transform: Option<Transform>,
     visible: Option<bool>,
+    cell: Option<(usize, usize)>,
 }
 
 impl<U> KeyFrame<U>
 where
-    U: FromUser + Serialize + DeserializeOwned,
+    U: FromUser + Serialize,
 {
     pub(crate) fn user(&self) -> Option<&U> {
         self.user.as_ref()
@@ -31,6 +32,10 @@ where
     pub(crate) fn visible(&self) -> Option<bool> {
         self.visible
     }
+
+    pub(crate) fn cell(&self) -> Option<(usize, usize)> {
+        self.cell
+    }
 }
 
 // キーフレーム生成
@@ -38,6 +43,7 @@ pub(crate) struct KeyFrameBuilder {
     user: Option<NonDecodedUser>,
     transform: Option<Transform>,
     visible: Option<bool>,
+    cell: Option<(usize, usize)>,
 }
 
 impl KeyFrameBuilder {
@@ -46,6 +52,7 @@ impl KeyFrameBuilder {
             user: None,
             transform: None,
             visible: None,
+            cell: None,
         }
     }
 
@@ -64,6 +71,11 @@ impl KeyFrameBuilder {
         self
     }
 
+    pub(crate) fn cell<T: Into<Option<(usize, usize)>>>(mut self, val: T) -> Self {
+        self.cell = val.into();
+        self
+    }
+
     pub(crate) fn build<U>(self) -> KeyFrame<U>
     where
         U: FromUser + Serialize,
@@ -74,6 +86,7 @@ impl KeyFrameBuilder {
                 .map(|val| U::from_user(val.integer, val.point, val.rect, val.text)),
             transform: self.transform,
             visible: self.visible,
+            cell: self.cell,
         }
     }
 }

@@ -48,8 +48,8 @@ where
         }
     }
 
-    pub fn animation<N: Into<K>>(&self, data_key: N) -> Option<&AnimationData<U>> {
-        self.stores.get(&data_key.into())
+    pub fn animation(&self, data_key: &K) -> Option<&AnimationData<U>> {
+        self.stores.get(data_key)
     }
 }
 
@@ -89,11 +89,11 @@ impl<U> AnimationData<U>
 where
     U: FromUser + Serialize,
 {
-    pub fn animation(&self, id: usize) -> Option<SpriteAnimationHandle<U>> {
-        self.animations.get(id).map(|handle| handle.clone())
+    pub fn animation(&self, id: usize) -> Option<&SpriteAnimationHandle<U>> {
+        self.animations.get(id).map(|handle| handle)
     }
 
-    pub fn sprite_sheet(&self, id: usize) -> Option<SpriteSheetHandle> {
-        self.sprite_sheets.get(id).map(|handle| handle.clone())
+    pub fn sprite_sheet(&self, id: usize) -> Option<&SpriteSheetHandle> {
+        self.sprite_sheets.get(id).map(|handle| handle)
     }
 }

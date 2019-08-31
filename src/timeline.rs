@@ -11,13 +11,14 @@ use amethyst::{
 use from_user::NonDecodedUser;
 use itertools::izip;
 use key_frame::{KeyFrame, KeyFrameBuilder};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct SpriteAnimation<U>
 where
     U: FromUser + Serialize,
 {
+    fps: u32,
     #[serde(bound(
         serialize = "Vec<TimeLine<U>>: Serialize",
         deserialize = "Vec<TimeLine<U>>: Deserialize<'de>"
@@ -35,8 +36,20 @@ where
         self.timelines.push(timeline);
     }
 
+    pub fn set_fps(&mut self, fps: u32) {
+        self.fps = fps;
+    }
+
+    pub fn fps(&self) -> u32 {
+        self.fps
+    }
+
     pub fn timelines(&self) -> impl Iterator<Item = &TimeLine<U>> {
         self.timelines.iter()
+    }
+
+    pub fn total_frame(&self) -> usize {
+        self.timelines.len()
     }
 }
 
@@ -66,7 +79,7 @@ where
 
 impl<U> TimeLine<U>
 where
-    U: FromUser + Serialize + DeserializeOwned,
+    U: FromUser + Serialize,
 {
     pub fn part_id(&self) -> usize {
         self.id
@@ -87,6 +100,10 @@ where
     pub fn visibles<'a>(&'a self) -> impl 'a + Iterator<Item = Option<bool>> {
         self.key_frames.iter().map(|k| k.visible())
     }
+
+    pub fn cells<'a>(&'a self) -> impl 'a + Iterator<Item = Option<(usize, usize)>> {
+        self.key_frames.iter().map(|k| k.cell())
+    }
 }
 
 // TimeLine生成用
@@ -100,6 +117,7 @@ pub struct TimeLineBuilder {
     scale_y: Vec<Option<f32>>,
     rotated: Vec<Option<f32>>,
     visible: Vec<Option<bool>>,
+    cell: Vec<Option<(usize, usize)>>,
 }
 
 impl TimeLineBuilder {
@@ -114,6 +132,7 @@ impl TimeLineBuilder {
             scale_y: Vec::with_capacity(frame_count),
             rotated: Vec::with_capacity(frame_count),
             visible: Vec::with_capacity(frame_count),
+            cell: Vec::with_capacity(frame_count),
         }
     }
 
@@ -221,6 +240,13 @@ impl TimeLineBuilder {
         self.visible.push(visible.into());
     }
 
+    pub fn add_cell<T: Into<Option<(usize, usize)>>>(&mut self, cell: T) {
+        if self.cell.len() >= self.frame_count {
+            panic!("over limit {} cell: {}", self.frame_count, self.cell.len(),);
+        }
+        self.cell.push(cell.into());
+    }
+
     pub fn build<U>(mut self, id: usize, parent: impl Into<Option<usize>>) -> TimeLine<U>
     where
         U: FromUser + Serialize,
@@ -256,6 +282,9 @@ impl TimeLineBuilder {
         for _ in 0..(self.frame_count - self.visible.len()) {
             self.visible.push(None);
         }
+        for _ in 0..(self.frame_count - self.cell.len()) {
+            self.cell.push(None);
+        }
 
         // 全部同じサイズになってるのでこれでタイムラインを構成
         let frames = izip!(
@@ -267,18 +296,19 @@ impl TimeLineBuilder {
             self.scale_y.into_iter(),
             self.rotated.into_iter(),
             self.visible.into_iter(),
+            self.cell.into_iter(),
         );
 
         let mut transform = Transform::default();
 
-        for (u, x, y, z, scale_x, scale_y, rotated, visible) in frames {
+        for (u, x, y, z, scale_x, scale_y, rotated, visible, cell) in frames {
             // transform は，直前のものを利用しつつ何らか値が入ったら変動値として扱う
             let transform = match (x, y, z, scale_x, scale_y, rotated) {
                 (None, None, None, None, None, None) => None,
                 (x, y, z, scale_x, scale_y, rotated) => {
                     x.map(|x| transform.set_translation_x(x));
                     y.map(|y| transform.set_translation_y(y));
-                    z.map(|z| transform.set_translation_z(z));
+                    z.map(|z| transform.set_translation_z(-z));
                     rotated.map(|rotated| transform.set_rotation_2d(rotated));
                     let mut scale = transform.scale().clone();
                     scale_x.map(|scale_x| scale.x = scale_x);
@@ -292,6 +322,7 @@ impl TimeLineBuilder {
                 .user(u)
                 .transform(transform)
                 .visible(visible)
+                .cell(cell)
                 .build();
 
             timeline.key_frames.push(key_frame);
