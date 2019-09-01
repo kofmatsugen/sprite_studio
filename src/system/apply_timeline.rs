@@ -10,7 +10,7 @@ use amethyst::{
         storage::ComponentEvent, BitSet, Builder, Entities, Join, LazyUpdate, Read, ReadExpect,
         ReadStorage, ReaderId, System, SystemData, World, WorldExt, WriteStorage,
     },
-    renderer::{pallet::rgb::Srgba, resources::Tint, SpriteRender},
+    renderer::SpriteRender,
     utils::removal::{exec_removal, Removal},
 };
 use itertools::izip;
