@@ -1,7 +1,9 @@
 mod from_user;
 mod key_frame;
+mod linear_color;
 
 pub use from_user::FromUser;
+pub use linear_color::LinearColor;
 
 use amethyst::{
     assets::{Asset, Handle},
@@ -128,7 +130,7 @@ pub struct TimeLineBuilder {
     rotated: Vec<Option<f32>>,
     visible: Vec<Option<bool>>,
     cell: Vec<Option<(usize, usize)>>,
-    color: Vec<Option<Tint>>,
+    color: Vec<Option<LinearColor>>,
 }
 
 impl TimeLineBuilder {
@@ -259,7 +261,7 @@ impl TimeLineBuilder {
         self.cell.push(cell.into());
     }
 
-    pub fn add_color<T: Into<Option<Tint>>>(&mut self, color: T) {
+    pub fn add_color<T: Into<Option<LinearColor>>>(&mut self, color: T) {
         if self.color.len() >= self.frame_count {
             panic!(
                 "over limit {} color: {}",
@@ -350,7 +352,7 @@ impl TimeLineBuilder {
                 .transform(transform)
                 .visible(visible)
                 .cell(cell)
-                .color(color)
+                .color(color.map(Into::into))
                 .build();
 
             timeline.key_frames.push(key_frame);
