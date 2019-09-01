@@ -1,5 +1,5 @@
 use super::from_user::{FromUser, NonDecodedUser};
-use amethyst::core::Transform;
+use amethyst::{core::Transform, renderer::resources::Tint};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -15,6 +15,7 @@ where
     transform: Option<Transform>,
     visible: Option<bool>,
     cell: Option<(usize, usize)>,
+    color: Option<Tint>,
 }
 
 impl<U> KeyFrame<U>
@@ -36,6 +37,10 @@ where
     pub(crate) fn cell(&self) -> Option<(usize, usize)> {
         self.cell
     }
+
+    pub(crate) fn color(&self) -> Option<&Tint> {
+        self.color.as_ref()
+    }
 }
 
 // キーフレーム生成
@@ -44,6 +49,7 @@ pub(crate) struct KeyFrameBuilder {
     transform: Option<Transform>,
     visible: Option<bool>,
     cell: Option<(usize, usize)>,
+    color: Option<Tint>,
 }
 
 impl KeyFrameBuilder {
@@ -53,6 +59,7 @@ impl KeyFrameBuilder {
             transform: None,
             visible: None,
             cell: None,
+            color: None,
         }
     }
 
@@ -75,6 +82,10 @@ impl KeyFrameBuilder {
         self.cell = val.into();
         self
     }
+    pub(crate) fn color<T: Into<Option<Tint>>>(mut self, val: T) -> Self {
+        self.color = val.into();
+        self
+    }
 
     pub(crate) fn build<U>(self) -> KeyFrame<U>
     where
@@ -87,6 +98,7 @@ impl KeyFrameBuilder {
             transform: self.transform,
             visible: self.visible,
             cell: self.cell,
+            color: self.color,
         }
     }
 }

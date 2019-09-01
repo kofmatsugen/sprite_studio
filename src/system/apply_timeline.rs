@@ -10,7 +10,7 @@ use amethyst::{
         storage::ComponentEvent, BitSet, Builder, Entities, Join, LazyUpdate, Read, ReadExpect,
         ReadStorage, ReaderId, System, SystemData, World, WorldExt, WriteStorage,
     },
-    renderer::SpriteRender,
+    renderer::{pallet::rgb::Srgba, resources::Tint, SpriteRender},
     utils::removal::{exec_removal, Removal},
 };
 use itertools::izip;
@@ -83,7 +83,7 @@ where
         for (e, anim_key, anim_time) in (&*entities, &animation_keys, &animation_times).join() {
             let current = anim_time.current_time();
 
-            if let Some((_, animation)) = anim_key.key().and_then(|(key, anim_id)| {
+            if let Some((anim_data, animation)) = anim_key.key().and_then(|(key, anim_id)| {
                 animation_store
                     .animation(key)
                     .and_then(|anim_data| {
@@ -99,19 +99,28 @@ where
 
                 let children = parent_hierarchy.all_children(e);
                 for (_, child, anim_part) in (children, &*entities, &animation_parts).join() {
-                    if let Some((transform, visible)) = animation
+                    if let Some((transform, visible, sprite_info, color)) = animation
                         .timelines()
                         .find(|tl| tl.part_id() == anim_part.0)
                         .map(|tl| {
                             (
                                 tl.transforms().nth(current_frame).and_then(|t| t),
                                 tl.visibles().nth(current_frame).and_then(|v| v),
+                                tl.cells().nth(current_frame).and_then(|c| c).and_then(
+                                    |(map_id, sprite_index)| {
+                                        anim_data
+                                            .sprite_sheet(map_id)
+                                            .map(|sheet| (sheet, sprite_index))
+                                    },
+                                ),
+                                tl.colors().nth(current_frame).and_then(|c| c),
                             )
                         })
                     {
                         if let Some(transform) = transform {
                             lazy.insert(child, transform.clone());
                         }
+
                         match visible {
                             Some(true) => {
                                 lazy.remove::<Hidden>(child);
@@ -120,6 +129,21 @@ where
                                 lazy.insert(child, Hidden);
                             }
                             None => {}
+                        }
+
+                        match sprite_info {
+                            Some((sheet, sprite_number)) => lazy.insert(
+                                child,
+                                SpriteRender {
+                                    sprite_sheet: sheet.clone(),
+                                    sprite_number,
+                                },
+                            ),
+                            None => {}
+                        }
+
+                        if let Some(color) = color {
+                            lazy.insert(child, color.clone());
                         }
                     }
                 }
