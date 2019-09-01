@@ -7,6 +7,7 @@ use amethyst::{
     assets::{Asset, Handle},
     core::Transform,
     ecs::DenseVecStorage,
+    renderer::resources::Tint,
 };
 use from_user::NonDecodedUser;
 use itertools::izip;
@@ -109,6 +110,10 @@ where
     pub fn cells<'a>(&'a self) -> impl 'a + Iterator<Item = Option<(usize, usize)>> {
         self.key_frames.iter().map(|k| k.cell())
     }
+
+    pub fn colors(&self) -> impl Iterator<Item = Option<&Tint>> {
+        self.key_frames.iter().map(|k| k.color())
+    }
 }
 
 // TimeLine生成用
@@ -123,6 +128,7 @@ pub struct TimeLineBuilder {
     rotated: Vec<Option<f32>>,
     visible: Vec<Option<bool>>,
     cell: Vec<Option<(usize, usize)>>,
+    color: Vec<Option<Tint>>,
 }
 
 impl TimeLineBuilder {
@@ -138,6 +144,7 @@ impl TimeLineBuilder {
             rotated: Vec::with_capacity(frame_count),
             visible: Vec::with_capacity(frame_count),
             cell: Vec::with_capacity(frame_count),
+            color: Vec::with_capacity(frame_count),
         }
     }
 
@@ -252,6 +259,17 @@ impl TimeLineBuilder {
         self.cell.push(cell.into());
     }
 
+    pub fn add_color<T: Into<Option<Tint>>>(&mut self, color: T) {
+        if self.color.len() >= self.frame_count {
+            panic!(
+                "over limit {} color: {}",
+                self.frame_count,
+                self.color.len(),
+            );
+        }
+        self.color.push(color.into());
+    }
+
     pub fn build<U>(mut self, id: usize, parent: impl Into<Option<usize>>) -> TimeLine<U>
     where
         U: FromUser + Serialize,
@@ -290,6 +308,9 @@ impl TimeLineBuilder {
         for _ in 0..(self.frame_count - self.cell.len()) {
             self.cell.push(None);
         }
+        for _ in 0..(self.frame_count - self.color.len()) {
+            self.color.push(None);
+        }
 
         // 全部同じサイズになってるのでこれでタイムラインを構成
         let frames = izip!(
@@ -302,11 +323,12 @@ impl TimeLineBuilder {
             self.rotated.into_iter(),
             self.visible.into_iter(),
             self.cell.into_iter(),
+            self.color.into_iter(),
         );
 
         let mut transform = Transform::default();
 
-        for (u, x, y, z, scale_x, scale_y, rotated, visible, cell) in frames {
+        for (u, x, y, z, scale_x, scale_y, rotated, visible, cell, color) in frames {
             // transform は，直前のものを利用しつつ何らか値が入ったら変動値として扱う
             let transform = match (x, y, z, scale_x, scale_y, rotated) {
                 (None, None, None, None, None, None) => None,
@@ -328,6 +350,7 @@ impl TimeLineBuilder {
                 .transform(transform)
                 .visible(visible)
                 .cell(cell)
+                .color(color)
                 .build();
 
             timeline.key_frames.push(key_frame);
