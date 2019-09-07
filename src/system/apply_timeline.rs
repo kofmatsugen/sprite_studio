@@ -11,7 +11,6 @@ use amethyst::{
         ReadStorage, ReaderId, System, SystemData, World, WorldExt, WriteStorage,
     },
     renderer::SpriteRender,
-    utils::removal::{exec_removal, Removal},
 };
 use itertools::izip;
 use log::*;
@@ -51,7 +50,6 @@ where
         ReadStorage<'s, AnimationTime>,
         ReadStorage<'s, PlayAnimationKey<K>>,
         ReadStorage<'s, AnimationPart>,
-        ReadStorage<'s, Removal<AnimationRoot>>,
     );
 
     fn setup(&mut self, world: &mut World) {
@@ -71,7 +69,6 @@ where
             animation_times,
             animation_keys,
             animation_parts,
-            removal,
         ): Self::SystemData,
     ) {
         self.dirty.clear();
@@ -160,8 +157,6 @@ where
         }
 
         for (_, e, anim_key) in (&self.dirty, &*entities, &animation_keys).join() {
-            info!("{:?} key: {:?}", e, anim_key.key());
-            exec_removal(&*entities, &removal, AnimationRoot(e));
             if let Some((anim_data, animation)) = anim_key.key().and_then(|(key, anim_id)| {
                 animation_store
                     .animation(key)

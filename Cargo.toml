@@ -10,3 +10,5 @@ amethyst = {git = "https://github.com/amethyst/amethyst.git", features = ["vulka
 itertools="*"
 ron="*"
 log="*"
+failure="*"
+lazy_static="*"
