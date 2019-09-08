@@ -12,54 +12,54 @@ where
         deserialize = "Option<U>: Deserialize<'de>"
     ))]
     user: Option<U>,
-    transform: Option<Transform>,
-    visible: Option<bool>,
+    transform: Transform,
+    visible: bool,
     cell: Option<(usize, usize)>,
-    color: Option<Tint>,
+    color: Tint,
 }
 
 impl<U> KeyFrame<U>
 where
     U: FromUser + Serialize,
 {
-    pub(crate) fn user(&self) -> Option<&U> {
+    pub fn user(&self) -> Option<&U> {
         self.user.as_ref()
     }
 
-    pub(crate) fn transform(&self) -> Option<&Transform> {
-        self.transform.as_ref()
+    pub fn transform(&self) -> &Transform {
+        &self.transform
     }
 
-    pub(crate) fn visible(&self) -> Option<bool> {
+    pub fn visible(&self) -> bool {
         self.visible
     }
 
-    pub(crate) fn cell(&self) -> Option<(usize, usize)> {
+    pub fn cell(&self) -> Option<(usize, usize)> {
         self.cell
     }
 
-    pub(crate) fn color(&self) -> Option<&Tint> {
-        self.color.as_ref()
+    pub fn color(&self) -> &Tint {
+        &self.color
     }
 }
 
 // キーフレーム生成
 pub(crate) struct KeyFrameBuilder {
     user: Option<NonDecodedUser>,
-    transform: Option<Transform>,
-    visible: Option<bool>,
+    transform: Transform,
+    visible: bool,
     cell: Option<(usize, usize)>,
-    color: Option<Tint>,
+    color: Tint,
 }
 
 impl KeyFrameBuilder {
     pub(crate) fn new() -> Self {
         KeyFrameBuilder {
             user: None,
-            transform: None,
-            visible: None,
-            cell: None,
-            color: None,
+            transform: Default::default(),
+            visible: Default::default(),
+            cell: Default::default(),
+            color: Default::default(),
         }
     }
 
@@ -68,22 +68,22 @@ impl KeyFrameBuilder {
         self
     }
 
-    pub(crate) fn transform<T: Into<Option<Transform>>>(mut self, val: T) -> Self {
-        self.transform = val.into();
+    pub(crate) fn transform(mut self, val: Transform) -> Self {
+        self.transform = val;
         self
     }
 
-    pub(crate) fn visible<T: Into<Option<bool>>>(mut self, val: T) -> Self {
-        self.visible = val.into();
+    pub(crate) fn visible(mut self, val: bool) -> Self {
+        self.visible = val;
         self
     }
 
-    pub(crate) fn cell<T: Into<Option<(usize, usize)>>>(mut self, val: T) -> Self {
-        self.cell = val.into();
+    pub(crate) fn cell(mut self, val: Option<(usize, usize)>) -> Self {
+        self.cell = val;
         self
     }
-    pub(crate) fn color<T: Into<Option<Tint>>>(mut self, val: T) -> Self {
-        self.color = val.into();
+    pub(crate) fn color(mut self, val: Tint) -> Self {
+        self.color = val;
         self
     }
 

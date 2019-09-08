@@ -3,6 +3,12 @@ use amethyst::renderer::{palette::rgb::Srgba, resources::Tint};
 #[derive(Debug, Clone)]
 pub struct LinearColor(pub f32, pub f32, pub f32, pub f32);
 
+impl Default for LinearColor {
+    fn default() -> Self {
+        LinearColor(1., 1., 1., 1.)
+    }
+}
+
 impl Into<Tint> for LinearColor {
     fn into(self) -> Tint {
         Tint(Srgba::new(self.0, self.1, self.2, self.3))

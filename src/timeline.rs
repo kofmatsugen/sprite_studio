@@ -97,15 +97,19 @@ where
         self.parent
     }
 
+    pub fn key_frame(&self, frame_no: usize) -> &KeyFrame<U> {
+        &self.key_frames[frame_no]
+    }
+
     pub fn users(&self) -> impl Iterator<Item = Option<&U>> {
         self.key_frames.iter().map(|k| k.user())
     }
 
-    pub fn transforms(&self) -> impl Iterator<Item = Option<&Transform>> {
+    pub fn transforms(&self) -> impl Iterator<Item = &Transform> {
         self.key_frames.iter().map(|k| k.transform())
     }
 
-    pub fn visibles<'a>(&'a self) -> impl 'a + Iterator<Item = Option<bool>> {
+    pub fn visibles<'a>(&'a self) -> impl 'a + Iterator<Item = bool> {
         self.key_frames.iter().map(|k| k.visible())
     }
 
@@ -113,7 +117,7 @@ where
         self.key_frames.iter().map(|k| k.cell())
     }
 
-    pub fn colors(&self) -> impl Iterator<Item = Option<&Tint>> {
+    pub fn colors(&self) -> impl Iterator<Item = &Tint> {
         self.key_frames.iter().map(|k| k.color())
     }
 }
@@ -122,15 +126,15 @@ where
 pub struct TimeLineBuilder {
     frame_count: usize,
     users: Vec<Option<NonDecodedUser>>,
-    pos_x: Vec<Option<f32>>,
-    pos_y: Vec<Option<f32>>,
-    pos_z: Vec<Option<f32>>,
-    scale_x: Vec<Option<f32>>,
-    scale_y: Vec<Option<f32>>,
-    rotated: Vec<Option<f32>>,
-    visible: Vec<Option<bool>>,
+    pos_x: Vec<f32>,
+    pos_y: Vec<f32>,
+    pos_z: Vec<f32>,
+    scale_x: Vec<f32>,
+    scale_y: Vec<f32>,
+    rotated: Vec<f32>,
+    visible: Vec<bool>,
     cell: Vec<Option<(usize, usize)>>,
-    color: Vec<Option<LinearColor>>,
+    color: Vec<LinearColor>,
 }
 
 impl TimeLineBuilder {
@@ -177,7 +181,7 @@ impl TimeLineBuilder {
         self.users.push(user);
     }
 
-    pub fn add_pos_x<T: Into<Option<f32>>>(&mut self, x: T) {
+    pub fn add_pos_x(&mut self, x: f32) {
         if self.pos_x.len() >= self.frame_count {
             panic!(
                 "over limit {} pos x: {}",
@@ -188,7 +192,7 @@ impl TimeLineBuilder {
         self.pos_x.push(x.into());
     }
 
-    pub fn add_pos_y<T: Into<Option<f32>>>(&mut self, y: T) {
+    pub fn add_pos_y(&mut self, y: f32) {
         if self.pos_y.len() >= self.frame_count {
             panic!(
                 "over limit {} pos y: {}",
@@ -199,7 +203,7 @@ impl TimeLineBuilder {
         self.pos_y.push(y.into());
     }
 
-    pub fn add_pos_z<T: Into<Option<f32>>>(&mut self, z: T) {
+    pub fn add_pos_z(&mut self, z: f32) {
         if self.pos_z.len() >= self.frame_count {
             panic!(
                 "over limit {} pos z: {}",
@@ -210,7 +214,7 @@ impl TimeLineBuilder {
         self.pos_z.push(z.into());
     }
 
-    pub fn add_scale_x<T: Into<Option<f32>>>(&mut self, x: T) {
+    pub fn add_scale_x(&mut self, x: f32) {
         if self.scale_x.len() >= self.frame_count {
             panic!(
                 "over limit {} scale x: {}",
@@ -221,7 +225,7 @@ impl TimeLineBuilder {
         self.scale_x.push(x.into());
     }
 
-    pub fn add_scale_y<T: Into<Option<f32>>>(&mut self, y: T) {
+    pub fn add_scale_y(&mut self, y: f32) {
         if self.scale_y.len() >= self.frame_count {
             panic!(
                 "over limit {} scale y: {}",
@@ -232,7 +236,7 @@ impl TimeLineBuilder {
         self.scale_y.push(y.into());
     }
 
-    pub fn add_rotated<T: Into<Option<f32>>>(&mut self, rotate: T) {
+    pub fn add_rotated(&mut self, rotate: f32) {
         if self.rotated.len() >= self.frame_count {
             panic!(
                 "over limit {} rotated: {}",
@@ -243,7 +247,7 @@ impl TimeLineBuilder {
         self.rotated.push(rotate.into());
     }
 
-    pub fn add_visible<T: Into<Option<bool>>>(&mut self, visible: T) {
+    pub fn add_visible(&mut self, visible: bool) {
         if self.visible.len() >= self.frame_count {
             panic!(
                 "over limit {} visible: {}",
@@ -254,14 +258,14 @@ impl TimeLineBuilder {
         self.visible.push(visible.into());
     }
 
-    pub fn add_cell<T: Into<Option<(usize, usize)>>>(&mut self, cell: T) {
+    pub fn add_cell(&mut self, cell: Option<(usize, usize)>) {
         if self.cell.len() >= self.frame_count {
             panic!("over limit {} cell: {}", self.frame_count, self.cell.len(),);
         }
-        self.cell.push(cell.into());
+        self.cell.push(cell);
     }
 
-    pub fn add_color<T: Into<Option<LinearColor>>>(&mut self, color: T) {
+    pub fn add_color(&mut self, color: LinearColor) {
         if self.color.len() >= self.frame_count {
             panic!(
                 "over limit {} color: {}",
@@ -284,34 +288,43 @@ impl TimeLineBuilder {
 
         // フレームカウントに満たない場合はNoneで埋める
         for _ in 0..(self.frame_count - self.pos_x.len()) {
-            self.pos_x.push(None);
+            self.pos_x.push(self.pos_x.last().map(|v| *v).unwrap_or(0.));
         }
         for _ in 0..(self.frame_count - self.pos_y.len()) {
-            self.pos_y.push(None);
+            self.pos_y.push(self.pos_y.last().map(|v| *v).unwrap_or(0.));
         }
         for _ in 0..(self.frame_count - self.pos_z.len()) {
-            self.pos_z.push(None);
+            self.pos_z.push(self.pos_z.last().map(|v| *v).unwrap_or(0.));
         }
         for _ in 0..(self.frame_count - self.scale_x.len()) {
-            self.scale_x.push(None);
+            self.scale_x
+                .push(self.scale_x.last().map(|v| *v).unwrap_or(1.));
         }
         for _ in 0..(self.frame_count - self.scale_y.len()) {
-            self.scale_y.push(None);
+            self.scale_y
+                .push(self.scale_y.last().map(|v| *v).unwrap_or(1.));
         }
         for _ in 0..(self.frame_count - self.rotated.len()) {
-            self.rotated.push(None);
+            self.rotated
+                .push(self.rotated.last().map(|v| *v).unwrap_or(0.));
         }
         for _ in 0..(self.frame_count - self.users.len()) {
             self.users.push(None);
         }
         for _ in 0..(self.frame_count - self.visible.len()) {
-            self.visible.push(None);
+            self.visible
+                .push(self.visible.last().map(|v| *v).unwrap_or(true));
         }
         for _ in 0..(self.frame_count - self.cell.len()) {
-            self.cell.push(None);
+            self.cell.push(self.cell.last().and_then(|v| *v));
         }
         for _ in 0..(self.frame_count - self.color.len()) {
-            self.color.push(None);
+            self.color.push(
+                self.color
+                    .last()
+                    .map(|v| v.clone())
+                    .unwrap_or(Default::default()),
+            );
         }
 
         // 全部同じサイズになってるのでこれでタイムラインを構成
@@ -332,19 +345,16 @@ impl TimeLineBuilder {
 
         for (u, x, y, z, scale_x, scale_y, rotated, visible, cell, color) in frames {
             // transform は，直前のものを利用しつつ何らか値が入ったら変動値として扱う
-            let transform = match (x, y, z, scale_x, scale_y, rotated) {
-                (None, None, None, None, None, None) => None,
-                (x, y, z, scale_x, scale_y, rotated) => {
-                    x.map(|x| transform.set_translation_x(x));
-                    y.map(|y| transform.set_translation_y(y));
-                    z.map(|z| transform.set_translation_z(-z));
-                    rotated.map(|rotated| transform.set_rotation_2d(rotated));
-                    let mut scale = transform.scale().clone();
-                    scale_x.map(|scale_x| scale.x = scale_x);
-                    scale_y.map(|scale_y| scale.y = scale_y);
-                    transform.set_scale(scale);
-                    Some(transform.clone())
-                }
+            let transform = {
+                transform.set_translation_x(x);
+                transform.set_translation_y(y);
+                transform.set_translation_z(-z);
+                transform.set_rotation_2d(rotated);
+                let mut scale = transform.scale().clone();
+                scale.x = scale_x;
+                scale.y = scale_y;
+                transform.set_scale(scale);
+                transform.clone()
             };
 
             let key_frame = KeyFrameBuilder::new()
@@ -352,7 +362,7 @@ impl TimeLineBuilder {
                 .transform(transform)
                 .visible(visible)
                 .cell(cell)
-                .color(color.map(Into::into))
+                .color(color.into())
                 .build();
 
             timeline.key_frames.push(key_frame);
