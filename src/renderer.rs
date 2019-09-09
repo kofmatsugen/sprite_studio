@@ -178,7 +178,6 @@ where
         world: &World,
     ) -> PrepareResult {
         let (
-            time,
             sprite_sheet_storage,
             tex_storage,
             animation_store,
@@ -188,7 +187,6 @@ where
             animation_times,
             animation_keys,
         ) = <(
-            Read<Time>,
             Read<AssetStorage<SpriteSheet>>,
             Read<AssetStorage<Texture>>,
             Read<AnimationStore<K, U>>,
@@ -231,6 +229,7 @@ where
                 Some((transform, anim_data, animation, time.current_time(), tint))
             })
         {
+            // 経過時間とアニメーションFPSからフレーム数算出
             let fps = animation.fps();
             let current = ((current * (fps as f32)).floor() as usize) % animation.total_frame();
 
@@ -238,11 +237,13 @@ where
                 .timelines()
                 .map(|tl| (tl.part_id(), tl.parent_id(), tl.key_frame(current)))
                 .filter_map(|(part_id, parent_id, key_frame)| {
+                    // 親の位置からグローバル座標を算出．親がいなければルートが親
                     let parent_matrix = match parent_id {
                         Some(parent_id) => global_matrixs[&parent_id].clone(),
                         None => transform.global_matrix().clone(),
                     };
 
+                    // 親の色を踏襲する
                     let parent_color = match parent_id {
                         Some(parent_id) => global_colors[&parent_id],
                         None => tint
@@ -364,9 +365,13 @@ fn build_sprite_pipeline<B: Backend>(
             .create_pipeline_layout(layouts, None as Option<(_, _)>)
     }?;
 
+    // AmethystのDrawFlat2Dのシェーダーを流用．
+    // todo: SpirVのコンパイル方法を調べる必要あり
     let shader_vertex = unsafe { crate::shaders::SPRITE_VERTEX.module(factory).unwrap() };
     let shader_fragment = unsafe { crate::shaders::SPRITE_FRAGMENT.module(factory).unwrap() };
 
+    // パイプライン生成．
+    // todo: これの意味を調べる．vulkan のドキュメントが使える？
     let pipes = PipelinesBuilder::new()
         .with_pipeline(
             PipelineDescBuilder::new()
@@ -407,6 +412,7 @@ fn build_sprite_pipeline<B: Backend>(
     }
 }
 
+// シェーダーにわたすパラメータ生成
 fn from_global_matrix_data<'a>(
     tex_storage: &AssetStorage<Texture>,
     sprite_storage: &'a AssetStorage<SpriteSheet>,
