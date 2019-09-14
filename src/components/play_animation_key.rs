@@ -1,9 +1,10 @@
 use amethyst::ecs::{Component, FlaggedStorage};
 
 pub type AnimationId = usize;
+pub type PackId = usize;
 
 pub struct PlayAnimationKey<K> {
-    animation_key: Option<(K, AnimationId)>,
+    animation_key: Option<(K, PackId, AnimationId)>,
 }
 
 impl<K> PlayAnimationKey<K> {
@@ -15,12 +16,12 @@ impl<K> PlayAnimationKey<K> {
 
     pub fn set_key<T>(&mut self, key: T)
     where
-        T: Into<Option<(K, AnimationId)>>,
+        T: Into<Option<(K, PackId, AnimationId)>>,
     {
         self.animation_key = key.into();
     }
 
-    pub fn key(&self) -> Option<&(K, AnimationId)> {
+    pub fn key(&self) -> Option<&(K, PackId, AnimationId)> {
         self.animation_key.as_ref()
     }
 }

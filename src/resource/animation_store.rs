@@ -19,7 +19,7 @@ where
     pub fn insert_animation<N: Into<K>>(
         &mut self,
         data_key: N,
-        animation: SpriteAnimationHandle<U>,
+        animation: Vec<SpriteAnimationHandle<U>>,
     ) {
         let key = data_key.into();
         match self.stores.get_mut(&key) {
@@ -69,7 +69,7 @@ pub struct AnimationData<U>
 where
     U: FromUser + Serialize,
 {
-    animations: Vec<SpriteAnimationHandle<U>>,
+    animations: Vec<Vec<SpriteAnimationHandle<U>>>,
     sprite_sheets: Vec<SpriteSheetHandle>,
 }
 
@@ -89,8 +89,8 @@ impl<U> AnimationData<U>
 where
     U: FromUser + Serialize,
 {
-    pub fn animation(&self, id: usize) -> Option<&SpriteAnimationHandle<U>> {
-        self.animations.get(id).map(|handle| handle)
+    pub fn animation(&self, pack_id: usize, anim_id: usize) -> Option<&SpriteAnimationHandle<U>> {
+        self.animations.get(pack_id).and_then(|anims| anims.get(anim_id))
     }
 
     pub fn sprite_sheet(&self, id: usize) -> Option<&SpriteSheetHandle> {

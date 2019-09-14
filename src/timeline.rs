@@ -1,3 +1,4 @@
+mod bound_type;
 mod from_user;
 mod key_frame;
 mod linear_color;

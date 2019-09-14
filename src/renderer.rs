@@ -7,7 +7,6 @@ use amethyst::{
     assets::{AssetStorage, Handle},
     core::{
         math::{Matrix4, Vector4},
-        timing::Time,
         transform::Transform,
     },
     ecs::{DispatcherBuilder, Join, Read, ReadStorage, SystemData, World},
@@ -215,11 +214,11 @@ where
         )
             .join()
             .filter_map(|(transform, key, time, tint)| {
-                let (anim_data, animation) = key.key().and_then(|(key, anim_id)| {
+                let (anim_data, animation) = key.key().and_then(|(key, pack_id, anim_id)| {
                     animation_store
                         .animation(key)
                         .and_then(|anim_data| {
-                            izip!(Some(anim_data), anim_data.animation(*anim_id)).next()
+                            izip!(Some(anim_data), anim_data.animation(*pack_id, *anim_id)).next()
                         })
                         .and_then(|(anim_data, handle)| {
                             izip!(Some(anim_data), sprite_animation_storage.get(handle)).next()

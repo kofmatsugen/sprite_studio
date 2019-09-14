@@ -5,17 +5,13 @@ use crate::{
 };
 use amethyst::{
     assets::AssetStorage,
-    core::{Hidden, Parent, ParentHierarchy},
+    core::ParentHierarchy,
     ecs::{
-        storage::ComponentEvent, BitSet, Builder, Entities, Join, LazyUpdate, Read, ReadExpect,
-        ReadStorage, ReaderId, System, SystemData, World, WorldExt, WriteStorage,
+        storage::ComponentEvent, BitSet, Entities, LazyUpdate, Read, ReadExpect, ReadStorage,
+        ReaderId, System, SystemData, World, WriteStorage,
     },
-    renderer::SpriteRender,
 };
-use itertools::izip;
-use log::*;
 use serde::Serialize;
-use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 pub struct TimeLineApplySystem<K, U> {
@@ -60,14 +56,14 @@ where
     fn run(
         &mut self,
         (
-            entities,
-            lazy,
-            animation_store,
-            sprite_animation_storage,
-            parent_hierarchy,
-            animation_times,
+            _entities,
+            _lazy,
+            _animation_store,
+            _sprite_animation_storage,
+            _parent_hierarchy,
+            _animation_times,
             animation_keys,
-            animation_parts,
+            _animation_parts,
         ): Self::SystemData,
     ) {
         self.dirty.clear();
