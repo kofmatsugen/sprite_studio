@@ -1,7 +1,8 @@
 use crate::{
     components::{AnimationPart, AnimationTime, PlayAnimationKey},
     resource::AnimationStore,
-    timeline::{FromUser, SpriteAnimation},
+    types::from_user::FromUser,
+    SpriteAnimation,
 };
 use amethyst::{
     assets::AssetStorage,

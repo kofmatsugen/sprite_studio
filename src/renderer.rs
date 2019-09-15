@@ -1,7 +1,8 @@
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
     resource::AnimationStore,
-    timeline::{FromUser, SpriteAnimation},
+    types::from_user::FromUser,
+    SpriteAnimation,
 };
 use amethyst::{
     assets::{AssetStorage, Handle},
@@ -234,8 +235,10 @@ where
 
             animation
                 .timelines()
-                .map(|tl| (tl.part_id(), tl.parent_id(), tl.key_frame(current)))
-                .filter_map(|(part_id, parent_id, key_frame)| {
+                .map(|tl| (tl.part_info(), tl.key_frame(current)))
+                .filter_map(|(part_info, key_frame)| {
+                    let part_id = part_info.part_id();
+                    let parent_id = part_info.parent_id();
                     // 親の位置からグローバル座標を算出．親がいなければルートが親
                     let parent_matrix = match parent_id {
                         Some(parent_id) => global_matrixs[&parent_id].clone(),

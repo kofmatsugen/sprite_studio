@@ -1,84 +1,22 @@
-mod bound_type;
-mod from_user;
-mod key_frame;
-mod linear_color;
-
-pub use from_user::FromUser;
-pub use linear_color::LinearColor;
-
-use amethyst::{
-    assets::{Asset, Handle},
-    core::Transform,
-    ecs::DenseVecStorage,
-    renderer::resources::Tint,
+use crate::types::{
+    bound_type::Bounds,
+    from_user::FromUser,
+    from_user::NonDecodedUser,
+    key_frame::{KeyFrame, KeyFrameBuilder},
+    linear_color::LinearColor,
+    part_info::{PartInfo, PartInfoBuilder},
+    part_type::PartType,
 };
-use from_user::NonDecodedUser;
+use amethyst::{core::Transform, renderer::resources::Tint};
 use itertools::izip;
-use key_frame::{KeyFrame, KeyFrameBuilder};
 use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize)]
-pub struct SpriteAnimation<U>
-where
-    U: FromUser + Serialize,
-{
-    fps: u32,
-    total_frame: usize,
-    #[serde(bound(
-        serialize = "Vec<TimeLine<U>>: Serialize",
-        deserialize = "Vec<TimeLine<U>>: Deserialize<'de>"
-    ))]
-    timelines: Vec<TimeLine<U>>,
-}
-
-pub type SpriteAnimationHandle<U> = Handle<SpriteAnimation<U>>;
-
-impl<U> SpriteAnimation<U>
-where
-    U: FromUser + Serialize,
-{
-    pub fn new(fps: u32, total_frame: usize) -> Self {
-        SpriteAnimation {
-            fps,
-            total_frame,
-            timelines: vec![],
-        }
-    }
-
-    pub fn add_timeline(&mut self, timeline: TimeLine<U>) {
-        self.timelines.push(timeline);
-    }
-
-    pub fn fps(&self) -> u32 {
-        self.fps
-    }
-
-    pub fn timelines(&self) -> impl Iterator<Item = &TimeLine<U>> {
-        self.timelines.iter()
-    }
-
-    pub fn total_frame(&self) -> usize {
-        self.total_frame
-    }
-}
-
-impl<U> Asset for SpriteAnimation<U>
-where
-    U: 'static + FromUser + Serialize + Sync + Send,
-{
-    const NAME: &'static str = "SPRITE_ANIMATION";
-
-    type Data = Self;
-    type HandleStorage = DenseVecStorage<Handle<Self>>;
-}
 
 #[derive(Serialize, Deserialize)]
 pub struct TimeLine<U>
 where
     U: FromUser + Serialize,
 {
-    id: usize,
-    parent: Option<usize>,
+    part_info: PartInfo,
     #[serde(bound(
         serialize = "Vec<KeyFrame<U>>: Serialize",
         deserialize = "Vec<KeyFrame<U>>: Deserialize<'de>"
@@ -90,12 +28,8 @@ impl<U> TimeLine<U>
 where
     U: FromUser + Serialize,
 {
-    pub fn part_id(&self) -> usize {
-        self.id
-    }
-
-    pub fn parent_id(&self) -> Option<usize> {
-        self.parent
+    pub fn part_info(&self) -> &PartInfo {
+        &self.part_info
     }
 
     pub fn key_frame(&self, frame_no: usize) -> &KeyFrame<U> {
@@ -126,6 +60,7 @@ where
 // TimeLine生成用
 pub struct TimeLineBuilder {
     frame_count: usize,
+    part_info: PartInfoBuilder,
     users: Vec<Option<NonDecodedUser>>,
     pos_x: Vec<f32>,
     pos_y: Vec<f32>,
@@ -142,6 +77,7 @@ impl TimeLineBuilder {
     pub fn new(frame_count: usize) -> Self {
         TimeLineBuilder {
             frame_count,
+            part_info: PartInfoBuilder::default(),
             users: Vec::with_capacity(frame_count),
             pos_x: Vec::with_capacity(frame_count),
             pos_y: Vec::with_capacity(frame_count),
@@ -277,14 +213,34 @@ impl TimeLineBuilder {
         self.color.push(color.into());
     }
 
-    pub fn build<U>(mut self, id: usize, parent: impl Into<Option<usize>>) -> TimeLine<U>
+    pub fn part_id(mut self, id: usize) -> Self {
+        self.part_info.id(id);
+        self
+    }
+
+    pub fn parent_id(mut self, parent_id: impl Into<Option<usize>>) -> Self {
+        self.part_info.parent(parent_id);
+        self
+    }
+
+    pub fn part_type(mut self, part_type: PartType) -> Self {
+        self.part_info.part_type(part_type);
+        self
+    }
+
+    pub fn bounds(mut self, bounds: impl Into<Option<Bounds>>) -> Self {
+        self.part_info.bounds(bounds);
+        self
+    }
+
+    pub fn build<U>(mut self) -> TimeLine<U>
     where
         U: FromUser + Serialize,
     {
+        let part_info = self.part_info.build();
         let mut timeline = TimeLine {
+            part_info,
             key_frames: Vec::with_capacity(self.frame_count),
-            id: id,
-            parent: parent.into(),
         };
 
         // フレームカウントに満たない場合はNoneで埋める

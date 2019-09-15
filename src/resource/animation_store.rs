@@ -1,4 +1,4 @@
-use crate::timeline::{FromUser, SpriteAnimationHandle};
+use crate::{types::from_user::FromUser, SpriteAnimationHandle};
 use amethyst::renderer::sprite::SpriteSheetHandle;
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -90,7 +90,9 @@ where
     U: FromUser + Serialize,
 {
     pub fn animation(&self, pack_id: usize, anim_id: usize) -> Option<&SpriteAnimationHandle<U>> {
-        self.animations.get(pack_id).and_then(|anims| anims.get(anim_id))
+        self.animations
+            .get(pack_id)
+            .and_then(|anims| anims.get(anim_id))
     }
 
     pub fn sprite_sheet(&self, id: usize) -> Option<&SpriteSheetHandle> {
