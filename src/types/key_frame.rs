@@ -1,4 +1,5 @@
 use super::from_user::{FromUser, NonDecodedUser};
+use crate::types::animation_instance::{InstanceKey, InstanceKeyBuilder};
 use amethyst::{core::Transform, renderer::resources::Tint};
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +17,7 @@ where
     visible: bool,
     cell: Option<(usize, usize)>,
     color: Tint,
+    instance_key: Option<InstanceKey>,
 }
 
 impl<U> KeyFrame<U>
@@ -50,6 +52,7 @@ pub(crate) struct KeyFrameBuilder {
     visible: bool,
     cell: Option<(usize, usize)>,
     color: Tint,
+    instance_key: Option<InstanceKeyBuilder>,
 }
 
 impl KeyFrameBuilder {
@@ -60,6 +63,7 @@ impl KeyFrameBuilder {
             visible: Default::default(),
             cell: Default::default(),
             color: Default::default(),
+            instance_key: Default::default(),
         }
     }
 
@@ -82,8 +86,14 @@ impl KeyFrameBuilder {
         self.cell = val;
         self
     }
+
     pub(crate) fn color(mut self, val: Tint) -> Self {
         self.color = val;
+        self
+    }
+
+    pub(crate) fn instance_key(mut self, val: Option<InstanceKeyBuilder>) -> Self {
+        self.instance_key = val;
         self
     }
 
@@ -99,6 +109,7 @@ impl KeyFrameBuilder {
             visible: self.visible,
             cell: self.cell,
             color: self.color,
+            instance_key: self.instance_key.map(|builder| builder.build()),
         }
     }
 }

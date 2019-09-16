@@ -1,4 +1,5 @@
 use crate::types::{
+    animation_instance::InstanceKeyBuilder,
     bound_type::Bounds,
     from_user::FromUser,
     from_user::NonDecodedUser,
@@ -71,6 +72,7 @@ pub struct TimeLineBuilder {
     visible: Vec<bool>,
     cell: Vec<Option<(usize, usize)>>,
     color: Vec<LinearColor>,
+    instance: Vec<Option<InstanceKeyBuilder>>,
 }
 
 impl TimeLineBuilder {
@@ -88,6 +90,7 @@ impl TimeLineBuilder {
             visible: Vec::with_capacity(frame_count),
             cell: Vec::with_capacity(frame_count),
             color: Vec::with_capacity(frame_count),
+            instance: Vec::with_capacity(frame_count),
         }
     }
 
@@ -213,6 +216,17 @@ impl TimeLineBuilder {
         self.color.push(color.into());
     }
 
+    pub fn add_instance(&mut self, instance: Option<InstanceKeyBuilder>) {
+        if self.instance.len() >= self.frame_count {
+            panic!(
+                "over limit {} instance: {}",
+                self.frame_count,
+                self.instance.len(),
+            );
+        }
+        self.instance.push(instance);
+    }
+
     pub fn part_id(mut self, id: usize) -> Self {
         self.part_info.id(id);
         self
@@ -230,6 +244,16 @@ impl TimeLineBuilder {
 
     pub fn bounds(mut self, bounds: impl Into<Option<Bounds>>) -> Self {
         self.part_info.bounds(bounds);
+        self
+    }
+
+    pub fn ref_pack_id(mut self, pack_id: impl Into<Option<usize>>) -> Self {
+        self.part_info.pack_id(pack_id);
+        self
+    }
+
+    pub fn ref_anim_id(mut self, anim_id: impl Into<Option<usize>>) -> Self {
+        self.part_info.animation_id(anim_id);
         self
     }
 
@@ -283,6 +307,14 @@ impl TimeLineBuilder {
                     .unwrap_or(Default::default()),
             );
         }
+        for _ in 0..(self.frame_count - self.instance.len()) {
+            let next_last = self
+                .instance
+                .last()
+                .and_then(|i| i.as_ref())
+                .and_then(InstanceKeyBuilder::next_key);
+            self.instance.push(next_last);
+        }
 
         // 全部同じサイズになってるのでこれでタイムラインを構成
         let frames = izip!(
@@ -296,11 +328,12 @@ impl TimeLineBuilder {
             self.visible.into_iter(),
             self.cell.into_iter(),
             self.color.into_iter(),
+            self.instance.into_iter(),
         );
 
         let mut transform = Transform::default();
 
-        for (u, x, y, z, scale_x, scale_y, rotated, visible, cell, color) in frames {
+        for (u, x, y, z, scale_x, scale_y, rotated, visible, cell, color, instance) in frames {
             // transform は，直前のものを利用しつつ何らか値が入ったら変動値として扱う
             let transform = {
                 transform.set_translation_x(x);
@@ -320,6 +353,7 @@ impl TimeLineBuilder {
                 .visible(visible)
                 .cell(cell)
                 .color(color.into())
+                .instance_key(instance)
                 .build();
 
             timeline.key_frames.push(key_frame);

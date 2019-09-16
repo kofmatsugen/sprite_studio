@@ -1,4 +1,4 @@
-use crate::types::{bound_type::Bounds, part_type::PartType};
+use crate::types::{animation_ref::RefferenceAnimation, bound_type::Bounds, part_type::PartType};
 use serde::*;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -7,6 +7,7 @@ pub struct PartInfo {
     parent: Option<usize>,
     part_type: PartType,
     bounds: Option<Bounds>,
+    animation_ref: Option<RefferenceAnimation>,
 }
 
 impl PartInfo {
@@ -33,6 +34,8 @@ pub(crate) struct PartInfoBuilder {
     parent: Option<usize>,
     part_type: Option<PartType>,
     bounds: Option<Bounds>,
+    ref_pack_id: Option<usize>,
+    ref_anim_id: Option<usize>,
 }
 
 impl PartInfoBuilder {
@@ -52,12 +55,26 @@ impl PartInfoBuilder {
         self.bounds = bounds.into();
     }
 
+    pub(crate) fn pack_id(&mut self, pack_id: impl Into<Option<usize>>) {
+        self.ref_pack_id = pack_id.into();
+    }
+
+    pub(crate) fn animation_id(&mut self, animation_id: impl Into<Option<usize>>) {
+        self.ref_anim_id = animation_id.into();
+    }
+
     pub(crate) fn build(self) -> PartInfo {
+        let animation_ref = match (self.ref_pack_id, self.ref_anim_id) {
+            (Some(pack), Some(anim)) => RefferenceAnimation::new(pack, anim).into(),
+            _ => None,
+        };
+
         PartInfo {
             id: self.id.expect("not set part id"),
             parent: self.parent,
             part_type: self.part_type.expect("not set part type"),
             bounds: self.bounds,
+            animation_ref,
         }
     }
 }
