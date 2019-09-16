@@ -43,6 +43,10 @@ where
     pub fn color(&self) -> &Tint {
         &self.color
     }
+
+    pub fn instance_key(&self) -> Option<&InstanceKey> {
+        self.instance_key.as_ref()
+    }
 }
 
 // キーフレーム生成

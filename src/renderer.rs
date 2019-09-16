@@ -1,7 +1,7 @@
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
     resource::AnimationStore,
-    types::from_user::FromUser,
+    types::{animation_instance::InstanceKey, from_user::FromUser},
     SpriteAnimation,
 };
 use amethyst::{
@@ -36,7 +36,6 @@ use amethyst::{
         util::simple_shader_set,
     },
 };
-use itertools::izip;
 use serde::Serialize;
 use std::collections::BTreeMap;
 
@@ -134,7 +133,7 @@ where
             subpass,
             framebuffer_width,
             framebuffer_height,
-            false,
+            true,
             vec![env.raw_layout(), textures.raw_layout()],
         )?;
 
@@ -204,109 +203,45 @@ where
 
         sprites_ref.clear_inner();
 
-        let mut global_matrixs = BTreeMap::<usize, Matrix4<f32>>::new();
-        let mut global_colors = BTreeMap::<usize, [f32; 4]>::new();
-
-        for (transform, anim_data, animation, current, tint) in (
+        for (transform, key, current, tint) in (
             &transforms,
             &animation_keys,
             &animation_times,
             tints.maybe(),
         )
             .join()
-            .filter_map(|(transform, key, time, tint)| {
-                let (anim_data, animation) = key.key().and_then(|(key, pack_id, anim_id)| {
-                    animation_store
-                        .animation(key)
-                        .and_then(|anim_data| {
-                            izip!(Some(anim_data), anim_data.animation(*pack_id, *anim_id)).next()
-                        })
-                        .and_then(|(anim_data, handle)| {
-                            izip!(Some(anim_data), sprite_animation_storage.get(handle)).next()
-                        })
-                })?;
-
-                Some((transform, anim_data, animation, time.current_time(), tint))
-            })
         {
-            // 経過時間とアニメーションFPSからフレーム数算出
-            let fps = animation.fps();
-            let current = ((current * (fps as f32)).floor() as usize) % animation.total_frame();
-
-            animation
-                .timelines()
-                .map(|tl| (tl.part_info(), tl.key_frame(current)))
-                .filter_map(|(part_info, key_frame)| {
-                    let part_id = part_info.part_id();
-                    let parent_id = part_info.parent_id();
-                    // 親の位置からグローバル座標を算出．親がいなければルートが親
-                    let parent_matrix = match parent_id {
-                        Some(parent_id) => global_matrixs[&parent_id].clone(),
-                        None => transform.global_matrix().clone(),
-                    };
-
-                    // 親の色を踏襲する
-                    let parent_color = match parent_id {
-                        Some(parent_id) => global_colors[&parent_id],
-                        None => tint
-                            .map(|t| {
-                                let (r, g, b, a) = t.0.into_components();
-                                [r, g, b, a]
-                            })
-                            .unwrap_or([1.0, 1.0, 1.0, 1.0]),
-                    };
-
-                    // グローバル座標計算
-                    let global_matrix = parent_matrix * key_frame.transform().matrix();
-
-                    // 後ろのパーツのサイズ計算のために BTreeMap にセット
-                    global_matrixs.insert(part_id, global_matrix.clone());
-
-                    // 乗算カラー値計算
-                    let (r, g, b, a) = key_frame.color().0.into_components();
-                    let part_color = [r, g, b, a];
-                    let mut global_color = [0.; 4];
-                    for i in 0..4 {
-                        global_color[i] = part_color[i] * parent_color[i];
-                    }
-                    // 後ろのパーツの色計算のために BTreeMap にセット
-                    global_colors.insert(part_id, global_color);
-
-                    // 以下で描画設定
-                    // 表示が不要ならここで終了
-                    if key_frame.visible() == false {
-                        return None;
-                    }
-
-                    let (sprite_sheet, sprite_no) =
-                        key_frame.cell().and_then(|(map_id, sprite_index)| {
-                            anim_data
-                                .sprite_sheet(map_id)
-                                .map(|sheet| (sheet, sprite_index))
-                        })?;
-
-                    log::debug!("{}: {} ({:?})", current, part_id, parent_id,);
-                    from_global_matrix_data(
-                        &tex_storage,
-                        &sprite_sheet_storage,
-                        &sprite_sheet,
-                        sprite_no,
-                        &global_matrix,
-                        global_color,
-                    )
-                    .and_then(|(batch_data, texture)| {
-                        let (tex_id, _) = textures_ref.insert(
-                            factory,
-                            world,
-                            texture,
-                            hal::image::Layout::ShaderReadOnlyOptimal,
-                        )?;
-                        Some((tex_id, batch_data))
-                    })
+            let current_time = current.current_time();
+            let matrix = transform.matrix();
+            let key = match key.key() {
+                Some((key, pack_id, anim_id)) => (key, *pack_id, *anim_id),
+                None => continue,
+            };
+            let color = tint
+                .map(|tint| {
+                    let (r, g, b, a) = tint.0.into_components();
+                    [r, g, b, a]
                 })
-                .for_each_group(|tex_id, batch_data| {
+                .unwrap_or([1.0; 4]);
+
+            build_animation(
+                key,
+                current_time,
+                color,
+                &animation_store,
+                &sprite_animation_storage,
+                &sprite_sheet_storage,
+                &tex_storage,
+                matrix,
+                &factory,
+                &world,
+                textures_ref,
+            )
+            .map(|commands| {
+                commands.into_iter().for_each_group(|tex_id, batch_data| {
                     sprites_ref.insert(tex_id, batch_data.drain(..))
-                });
+                })
+            });
         }
 
         self.textures.maintain(factory, world);
@@ -386,7 +321,7 @@ fn build_sprite_pipeline<B: Backend>(
                 .with_blend_targets(vec![pso::ColorBlendDesc(
                     pso::ColorMask::ALL,
                     if transparent {
-                        pso::BlendState::PREMULTIPLIED_ALPHA
+                        pso::BlendState::ALPHA
                     } else {
                         pso::BlendState::Off
                     },
@@ -438,6 +373,7 @@ fn from_global_matrix_data<'a>(
     log::debug!("\tpos  : {:?}", pos.xy());
     log::debug!("\tdir_x: {:?}", dir_x.xy());
     log::debug!("\tdir_y: {:?}", dir_y.xy());
+    log::debug!("\tcolor: {:?}", tint);
 
     Some((
         SpriteArgs {
@@ -451,4 +387,320 @@ fn from_global_matrix_data<'a>(
         },
         &sprite_sheet.texture,
     ))
+}
+
+fn build_animation<B, K, U>(
+    animation_key: (&K, usize, usize),
+    current_time: f32,
+    root_color: [f32; 4],
+    animation_store: &Read<AnimationStore<K, U>>,
+    sprite_animation_storage: &Read<AssetStorage<SpriteAnimation<U>>>,
+    sprite_sheet_storage: &Read<AssetStorage<SpriteSheet>>,
+    tex_storage: &Read<AssetStorage<Texture>>,
+    root_matrix: Matrix4<f32>,
+    factory: &Factory<B>,
+    world: &World,
+    textures_ref: &mut TextureSub<B>,
+) -> Option<Vec<(TextureId, SpriteArgs)>>
+where
+    B: Backend,
+    K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
+    U: 'static + Send + Sync + FromUser + Serialize + std::fmt::Debug,
+{
+    let (key, pack_id, anim_id) = animation_key;
+    let (anim_data, root_animation) = animation_store
+        .animation(key)
+        .and_then(|anim_data| {
+            anim_data
+                .animation(pack_id, anim_id)
+                .map(|handle| (anim_data, handle))
+        })
+        .and_then(|(anim_data, handle)| {
+            sprite_animation_storage
+                .get(handle)
+                .map(|animation| (anim_data, animation))
+        })?;
+    // 経過時間とアニメーションFPSからフレーム数算出
+    let fps = root_animation.fps();
+    let current = (current_time * (fps as f32)).floor() as usize;
+    let current = current % root_animation.total_frame();
+
+    let mut global_matrixs = BTreeMap::new();
+    let mut global_colors = BTreeMap::new();
+
+    let groups = root_animation
+        .timelines()
+        .map(|tl| (tl.part_info(), tl.key_frame(current)))
+        .filter_map(|(part_info, key_frame)| {
+            let part_id = part_info.part_id();
+            let parent_id = part_info.parent_id();
+            // 親の位置からグローバル座標を算出．親がいなければルートが親
+            let parent_matrix = match parent_id {
+                Some(parent_id) => global_matrixs[&parent_id],
+                None => root_matrix,
+            };
+
+            // 親の色を踏襲する
+            let parent_color = match parent_id {
+                Some(parent_id) => global_colors[&parent_id],
+                None => root_color,
+            };
+
+            // グローバル座標計算
+            let global_matrix = parent_matrix * key_frame.transform().matrix();
+
+            // 後ろのパーツのサイズ計算のために BTreeMap にセット
+            global_matrixs.insert(part_id, global_matrix);
+
+            // 乗算カラー値計算
+            let (r, g, b, a) = key_frame.color().0.into_components();
+            let part_color = [r, g, b, a];
+            let mut global_color = [0.; 4];
+            for i in 0..4 {
+                global_color[i] = part_color[i] * parent_color[i];
+            }
+            // 後ろのパーツの色計算のために BTreeMap にセット
+            global_colors.insert(part_id, global_color);
+
+            // 以下で描画設定
+            // 表示が不要ならここで終了
+            if key_frame.visible() == false {
+                return None;
+            }
+
+            log::debug!("{}: {} ({:?})", current, part_id, parent_id,);
+            let command = key_frame
+                .cell()
+                .and_then(|(map_id, sprite_index)| {
+                    anim_data
+                        .sprite_sheet(map_id)
+                        .map(|sheet| (sheet, sprite_index))
+                })
+                .and_then(|(sprite_sheet, sprite_no)| {
+                    from_global_matrix_data(
+                        tex_storage,
+                        sprite_sheet_storage,
+                        &sprite_sheet,
+                        sprite_no,
+                        &global_matrix,
+                        global_color,
+                    )
+                    .and_then(|(batch_data, texture)| {
+                        let (tex_id, _) = textures_ref.insert(
+                            factory,
+                            world,
+                            texture,
+                            hal::image::Layout::ShaderReadOnlyOptimal,
+                        )?;
+                        Some((tex_id, batch_data))
+                    })
+                });
+
+            let mut commands = match command {
+                Some(command) => vec![command],
+                None => vec![],
+            };
+
+            // インスタンスパーツなら描画データを追加
+            match (part_info.refference_animation(), key_frame.instance_key()) {
+                (Some(ref_anim), Some(instance_key)) => {
+                    if instance_key.independent() == false {
+                        let anim_key = (key, ref_anim.pack_id(), ref_anim.animation_id());
+                        let instance_commands = build_animation_instance(
+                            anim_key,
+                            instance_key,
+                            global_color,
+                            animation_store,
+                            sprite_animation_storage,
+                            sprite_sheet_storage,
+                            tex_storage,
+                            global_matrix,
+                            factory,
+                            world,
+                            textures_ref,
+                        );
+
+                        match instance_commands {
+                            Some(mut instance_commands) => commands.append(&mut instance_commands),
+                            None => {}
+                        }
+                    }
+                }
+                _ => {}
+            }
+
+            Some(commands)
+        });
+    Some(groups.flatten().collect())
+}
+
+fn build_animation_instance<B, K, U>(
+    animation_key: (&K, usize, usize),
+    instance_key: &InstanceKey,
+    root_color: [f32; 4],
+    animation_store: &Read<AnimationStore<K, U>>,
+    sprite_animation_storage: &Read<AssetStorage<SpriteAnimation<U>>>,
+    sprite_sheet_storage: &Read<AssetStorage<SpriteSheet>>,
+    tex_storage: &Read<AssetStorage<Texture>>,
+    root_matrix: Matrix4<f32>,
+    factory: &Factory<B>,
+    world: &World,
+    textures_ref: &mut TextureSub<B>,
+) -> Option<Vec<(TextureId, SpriteArgs)>>
+where
+    B: Backend,
+    K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
+    U: 'static + Send + Sync + FromUser + Serialize + std::fmt::Debug,
+{
+    let (key, pack_id, anim_id) = animation_key;
+    let (anim_data, root_animation) = animation_store
+        .animation(key)
+        .and_then(|anim_data| {
+            anim_data
+                .animation(pack_id, anim_id)
+                .map(|handle| (anim_data, handle))
+        })
+        .and_then(|(anim_data, handle)| {
+            sprite_animation_storage
+                .get(handle)
+                .map(|animation| (anim_data, animation))
+        })?;
+    // 経過時間とアニメーションFPSからフレーム数算出
+    let speed_rate = instance_key.speed_rate();
+    let play_frame = ((instance_key.play_frame() as f32) * speed_rate).floor() as usize;
+    let start_offset = instance_key.start_offset();
+    let end_offset = instance_key.end_offset();
+    let _reverse = instance_key.reverse();
+    // 終端オフセットと開始オフセットから長さを計算
+    let total_length = root_animation.total_frame() - end_offset - start_offset;
+
+    // ループ数は往復再生なら二倍
+    let loop_num = instance_key.loop_num().map(|num| {
+        if instance_key.pingpong() {
+            num * 2
+        } else {
+            num
+        }
+    });
+
+    // 現在のループ回数を計算
+    let current_loop_num = play_frame / total_length;
+
+    let current = match loop_num {
+        Some(loop_num) => {
+            if loop_num > current_loop_num {
+                (play_frame % total_length) + start_offset
+            } else {
+                total_length + start_offset - 1
+            }
+        }
+        None => (play_frame % total_length) + start_offset,
+    };
+
+    let mut global_matrixs = BTreeMap::new();
+    let mut global_colors = BTreeMap::new();
+
+    let groups = root_animation
+        .timelines()
+        .map(|tl| (tl.part_info(), tl.key_frame(current)))
+        .filter_map(|(part_info, key_frame)| {
+            let part_id = part_info.part_id();
+            let parent_id = part_info.parent_id();
+            // 親の位置からグローバル座標を算出．親がいなければルートが親
+            let parent_matrix = match parent_id {
+                Some(parent_id) => global_matrixs[&parent_id],
+                None => root_matrix,
+            };
+
+            // 親の色を踏襲する
+            let parent_color = match parent_id {
+                Some(parent_id) => global_colors[&parent_id],
+                None => root_color,
+            };
+
+            // グローバル座標計算
+            let global_matrix = parent_matrix * key_frame.transform().matrix();
+
+            // 後ろのパーツのサイズ計算のために BTreeMap にセット
+            global_matrixs.insert(part_id, global_matrix);
+
+            // 乗算カラー値計算
+            let (r, g, b, a) = key_frame.color().0.into_components();
+            let part_color = [r, g, b, a];
+            let mut global_color = [0.; 4];
+            for i in 0..4 {
+                global_color[i] = part_color[i] * parent_color[i];
+            }
+            // 後ろのパーツの色計算のために BTreeMap にセット
+            global_colors.insert(part_id, global_color);
+
+            // 以下で描画設定
+            // 表示が不要ならここで終了
+            if key_frame.visible() == false {
+                return None;
+            }
+
+            let (sprite_sheet, sprite_no) =
+                key_frame.cell().and_then(|(map_id, sprite_index)| {
+                    anim_data
+                        .sprite_sheet(map_id)
+                        .map(|sheet| (sheet, sprite_index))
+                })?;
+
+            log::debug!("{}: {} ({:?})", current, part_id, parent_id,);
+            let command = from_global_matrix_data(
+                tex_storage,
+                sprite_sheet_storage,
+                &sprite_sheet,
+                sprite_no,
+                &global_matrix,
+                global_color,
+            )
+            .and_then(|(batch_data, texture)| {
+                let (tex_id, _) = textures_ref.insert(
+                    factory,
+                    world,
+                    texture,
+                    hal::image::Layout::ShaderReadOnlyOptimal,
+                )?;
+                Some((tex_id, batch_data))
+            });
+
+            let mut commands = match command {
+                Some(command) => vec![command],
+                None => vec![],
+            };
+
+            // インスタンスパーツなら描画データを追加
+            match (part_info.refference_animation(), key_frame.instance_key()) {
+                (Some(ref_anim), Some(instance_key)) => {
+                    if instance_key.independent() == false {
+                        log::info!("{}: play instance {}F", part_id, instance_key.play_frame());
+                        let anim_key = (key, ref_anim.pack_id(), ref_anim.animation_id());
+                        let instance_commands = build_animation_instance(
+                            anim_key,
+                            instance_key,
+                            global_color,
+                            animation_store,
+                            sprite_animation_storage,
+                            sprite_sheet_storage,
+                            tex_storage,
+                            global_matrix,
+                            factory,
+                            world,
+                            textures_ref,
+                        );
+
+                        match instance_commands {
+                            Some(mut instance_commands) => commands.append(&mut instance_commands),
+                            None => {}
+                        }
+                    }
+                }
+                _ => {}
+            }
+
+            Some(commands)
+        });
+    Some(groups.flatten().collect())
 }

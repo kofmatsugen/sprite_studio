@@ -1,6 +1,6 @@
 use amethyst::renderer::{palette::rgb::Srgba, resources::Tint};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct LinearColor(pub f32, pub f32, pub f32, pub f32);
 
 impl Default for LinearColor {

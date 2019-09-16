@@ -26,6 +26,10 @@ impl PartInfo {
     pub fn bounds(&self) -> Option<&Bounds> {
         self.bounds.as_ref()
     }
+
+    pub fn refference_animation(&self) -> Option<&RefferenceAnimation> {
+        self.animation_ref.as_ref()
+    }
 }
 
 #[derive(Default)]

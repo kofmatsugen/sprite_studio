@@ -8,7 +8,7 @@ use crate::types::{
     part_info::{PartInfo, PartInfoBuilder},
     part_type::PartType,
 };
-use amethyst::{core::Transform, renderer::resources::Tint};
+use amethyst::core::Transform;
 use itertools::izip;
 use serde::{Deserialize, Serialize};
 
@@ -36,26 +36,6 @@ where
     pub fn key_frame(&self, frame_no: usize) -> &KeyFrame<U> {
         &self.key_frames[frame_no]
     }
-
-    pub fn users(&self) -> impl Iterator<Item = Option<&U>> {
-        self.key_frames.iter().map(|k| k.user())
-    }
-
-    pub fn transforms(&self) -> impl Iterator<Item = &Transform> {
-        self.key_frames.iter().map(|k| k.transform())
-    }
-
-    pub fn visibles<'a>(&'a self) -> impl 'a + Iterator<Item = bool> {
-        self.key_frames.iter().map(|k| k.visible())
-    }
-
-    pub fn cells<'a>(&'a self) -> impl 'a + Iterator<Item = Option<(usize, usize)>> {
-        self.key_frames.iter().map(|k| k.cell())
-    }
-
-    pub fn colors(&self) -> impl Iterator<Item = &Tint> {
-        self.key_frames.iter().map(|k| k.color())
-    }
 }
 
 // TimeLine生成用
@@ -72,6 +52,7 @@ pub struct TimeLineBuilder {
     visible: Vec<bool>,
     cell: Vec<Option<(usize, usize)>>,
     color: Vec<LinearColor>,
+    alpha: Vec<f32>,
     instance: Vec<Option<InstanceKeyBuilder>>,
 }
 
@@ -90,6 +71,7 @@ impl TimeLineBuilder {
             visible: Vec::with_capacity(frame_count),
             cell: Vec::with_capacity(frame_count),
             color: Vec::with_capacity(frame_count),
+            alpha: Vec::with_capacity(frame_count),
             instance: Vec::with_capacity(frame_count),
         }
     }
@@ -216,6 +198,17 @@ impl TimeLineBuilder {
         self.color.push(color.into());
     }
 
+    pub fn add_alpha(&mut self, alpha: f32) {
+        if self.alpha.len() >= self.frame_count {
+            panic!(
+                "over limit {} alpha: {}",
+                self.frame_count,
+                self.alpha.len(),
+            );
+        }
+        self.alpha.push(alpha);
+    }
+
     pub fn add_instance(&mut self, instance: Option<InstanceKeyBuilder>) {
         if self.instance.len() >= self.frame_count {
             panic!(
@@ -315,6 +308,10 @@ impl TimeLineBuilder {
                 .and_then(InstanceKeyBuilder::next_key);
             self.instance.push(next_last);
         }
+        for _ in 0..(self.frame_count - self.alpha.len()) {
+            self.alpha
+                .push(self.alpha.last().map(|v| *v).unwrap_or(1.0));
+        }
 
         // 全部同じサイズになってるのでこれでタイムラインを構成
         let frames = izip!(
@@ -329,11 +326,15 @@ impl TimeLineBuilder {
             self.cell.into_iter(),
             self.color.into_iter(),
             self.instance.into_iter(),
+            self.alpha.into_iter(),
         );
 
         let mut transform = Transform::default();
+        let mut linear_color = LinearColor(1.0, 1.0, 1.0, 1.0);
 
-        for (u, x, y, z, scale_x, scale_y, rotated, visible, cell, color, instance) in frames {
+        for (idx, (u, x, y, z, scale_x, scale_y, rotated, visible, cell, color, instance, alpha)) in
+            frames.enumerate()
+        {
             // transform は，直前のものを利用しつつ何らか値が入ったら変動値として扱う
             let transform = {
                 transform.set_translation_x(x);
@@ -347,12 +348,18 @@ impl TimeLineBuilder {
                 transform.clone()
             };
 
+            linear_color.0 = color.0;
+            linear_color.1 = color.1;
+            linear_color.2 = color.2;
+            linear_color.3 = alpha;
+            log::info!("{} F: color = {:?}", idx, linear_color);
+
             let key_frame = KeyFrameBuilder::new()
                 .user(u)
                 .transform(transform)
                 .visible(visible)
                 .cell(cell)
-                .color(color.into())
+                .color(linear_color.into())
                 .instance_key(instance)
                 .build();
 
