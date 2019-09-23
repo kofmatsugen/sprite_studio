@@ -21,10 +21,13 @@ where
 {
     fps: u32,
     total_frame: usize,
-    #[serde(bound(
-        serialize = "Vec<TimeLine<U>>: Serialize",
-        deserialize = "Vec<TimeLine<U>>: Deserialize<'de>"
-    ))]
+    #[serde(
+        bound(
+            serialize = "Vec<TimeLine<U>>: Serialize",
+            deserialize = "Vec<TimeLine<U>>: Deserialize<'de>"
+        ),
+        skip_serializing_if = "Vec::is_empty"
+    )]
     timelines: Vec<TimeLine<U>>,
 }
 

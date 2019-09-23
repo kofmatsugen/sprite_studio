@@ -370,10 +370,11 @@ fn from_global_matrix_data<'a>(
     let dir_y = transform.column(1) * -sprite.height;
     let pos = transform * Vector4::new(-sprite.offsets[0], -sprite.offsets[1], 0.0, 1.0);
 
-    log::debug!("\tpos  : {:?}", pos.xy());
-    log::debug!("\tdir_x: {:?}", dir_x.xy());
-    log::debug!("\tdir_y: {:?}", dir_y.xy());
-    log::debug!("\tcolor: {:?}", tint);
+    log::debug!("\tmatrix: {:?}", transform);
+    log::debug!("\t\tpos  : {:?}", pos.xy());
+    log::debug!("\t\tdir_x: {:?}", dir_x.xy());
+    log::debug!("\t\tdir_y: {:?}", dir_y.xy());
+    log::debug!("\t\tcolor: {:?}", tint);
 
     Some((
         SpriteArgs {
@@ -647,7 +648,7 @@ where
                         .map(|sheet| (sheet, sprite_index))
                 })?;
 
-            log::debug!("{}: {} ({:?})", current, part_id, parent_id,);
+            log::info!("{}: {} ({:?})", current, part_id, parent_id,);
             let command = from_global_matrix_data(
                 tex_storage,
                 sprite_sheet_storage,

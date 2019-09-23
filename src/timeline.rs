@@ -332,8 +332,10 @@ impl TimeLineBuilder {
         let mut transform = Transform::default();
         let mut linear_color = LinearColor(1.0, 1.0, 1.0, 1.0);
 
-        for (idx, (u, x, y, z, scale_x, scale_y, rotated, visible, cell, color, instance, alpha)) in
-            frames.enumerate()
+        for (
+            _idx,
+            (u, x, y, z, scale_x, scale_y, rotated, visible, cell, color, instance, alpha),
+        ) in frames.enumerate()
         {
             // transform は，直前のものを利用しつつ何らか値が入ったら変動値として扱う
             let transform = {
@@ -352,7 +354,6 @@ impl TimeLineBuilder {
             linear_color.1 = color.1;
             linear_color.2 = color.2;
             linear_color.3 = alpha;
-            log::info!("{} F: color = {:?}", idx, linear_color);
 
             let key_frame = KeyFrameBuilder::new()
                 .user(u)

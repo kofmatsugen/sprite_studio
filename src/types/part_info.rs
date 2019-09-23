@@ -4,9 +4,12 @@ use serde::*;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PartInfo {
     id: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
     parent: Option<usize>,
     part_type: PartType,
+    #[serde(skip_serializing_if = "Option::is_none")]
     bounds: Option<Bounds>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     animation_ref: Option<RefferenceAnimation>,
 }
 

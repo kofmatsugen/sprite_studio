@@ -3,13 +3,14 @@ use serde::*;
 // インスタンスパーツの再生情報
 #[derive(Deserialize, Serialize, Debug)]
 pub struct InstanceKey {
-    independent: bool,       // 独立動作(true のときは新たにエンティティ生成する)
+    independent: bool, // 独立動作(true のときは新たにエンティティ生成する)
+    #[serde(skip_serializing_if = "Option::is_none")]
     loop_num: Option<usize>, // ループ回数(None のときは無限)
-    play_frame: usize,       // 再生位置
-    start_offset: usize,     // 再生開始位置
-    end_offset: usize,       // 再生終了位置
-    reverse: bool,           // 逆再生
-    pingpong: bool,          // 往復再生
+    play_frame: usize, // 再生位置
+    start_offset: usize, // 再生開始位置
+    end_offset: usize, // 再生終了位置
+    reverse: bool,     // 逆再生
+    pingpong: bool,    // 往復再生
     speed_rate: f32,
 }
 

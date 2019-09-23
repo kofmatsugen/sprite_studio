@@ -8,15 +8,23 @@ pub struct KeyFrame<U>
 where
     U: Serialize,
 {
-    #[serde(bound(
-        serialize = "Option<U>: Serialize",
-        deserialize = "Option<U>: Deserialize<'de>"
-    ))]
+    #[serde(
+        bound(
+            serialize = "Option<U>: Serialize",
+            deserialize = "Option<U>: Deserialize<'de>"
+        ),
+        skip_serializing_if = "Option::is_none"
+    )]
     user: Option<U>,
+    #[serde(skip_serializing_if = "skip_transform", default = "Transform::default")]
     transform: Transform,
+    #[serde(skip_serializing_if = "skip_visible", default = "default_visible")]
     visible: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     cell: Option<(usize, usize)>,
+    #[serde(skip_serializing_if = "skip_tint", default = "Tint::default")]
     color: Tint,
+    #[serde(skip_serializing_if = "Option::is_none")]
     instance_key: Option<InstanceKey>,
 }
 
@@ -116,4 +124,31 @@ impl KeyFrameBuilder {
             instance_key: self.instance_key.map(|builder| builder.build()),
         }
     }
+}
+
+fn skip_visible(visible: &bool) -> bool {
+    *visible
+}
+fn default_visible() -> bool {
+    true
+}
+
+fn skip_transform(transform: &Transform) -> bool {
+    transform == &Transform::default()
+}
+
+fn skip_tint(color: &Tint) -> bool {
+    let color: [f32; 4] = color.clone().into();
+    let default_color = [1., 1., 1., 1.];
+
+    let eq_default = {
+        let color = &color;
+        let default_color = &default_color;
+
+        color
+            .iter()
+            .zip(default_color.iter())
+            .all(|(c, d)| *c == *d)
+    };
+    eq_default
 }
