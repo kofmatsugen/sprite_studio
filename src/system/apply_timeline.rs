@@ -1,5 +1,5 @@
 use crate::{
-    components::{AnimationPart, AnimationTime, PlayAnimationKey},
+    components::{AnimationTime, PlayAnimationKey},
     resource::AnimationStore,
     types::from_user::FromUser,
     SpriteAnimation,
@@ -46,7 +46,6 @@ where
         ReadExpect<'s, ParentHierarchy>,
         ReadStorage<'s, AnimationTime>,
         ReadStorage<'s, PlayAnimationKey<K>>,
-        ReadStorage<'s, AnimationPart>,
     );
 
     fn setup(&mut self, world: &mut World) {
@@ -64,7 +63,6 @@ where
             _parent_hierarchy,
             _animation_times,
             animation_keys,
-            _animation_parts,
         ): Self::SystemData,
     ) {
         self.dirty.clear();

@@ -212,7 +212,7 @@ where
             .join()
         {
             let current_time = current.current_time();
-            let matrix = transform.matrix();
+            let matrix = *transform.global_matrix();
             let key = match key.key() {
                 Some((key, pack_id, anim_id)) => (key, *pack_id, *anim_id),
                 None => continue,
