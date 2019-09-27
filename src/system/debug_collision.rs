@@ -1,7 +1,7 @@
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
     resource::AnimationStore,
-    traits::from_user::FromUser,
+    traits::{collision_color::CollisionColor, from_user::FromUser},
     SpriteAnimation,
 };
 use amethyst::{
@@ -33,7 +33,7 @@ impl<K, U> DebugCollisionSystem<K, U> {
 impl<'s, K, U> System<'s> for DebugCollisionSystem<K, U>
 where
     K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
-    U: 'static + Send + Sync + FromUser + Serialize,
+    U: 'static + Send + Sync + FromUser + CollisionColor + Serialize,
 {
     type SystemData = (
         Entities<'s>,
@@ -107,7 +107,7 @@ fn draw_collision<K, U>(
 ) -> Option<()>
 where
     K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
-    U: 'static + Send + Sync + FromUser + Serialize,
+    U: 'static + Send + Sync + FromUser + CollisionColor + Serialize,
 {
     debug.clear();
 
@@ -134,7 +134,7 @@ where
     let current = current % root_animation.total_frame();
 
     let mut global_matrixs = BTreeMap::new();
-    for (_part_info, _key_frame, collision) in root_animation
+    for (_part_info, key_frame, collision) in root_animation
         .timelines()
         .map(|tl| (tl.part_info(), tl.key_frame(current)))
         .map(|(part_info, key_frame)| {
@@ -164,7 +164,8 @@ where
 
         let min = Point2::new(x - width / 2., y - height / 2.);
         let max = Point2::new(x + width / 2., y + height / 2.);
-        let color = Srgba::new(1., 0., 0., 1.);
+        let color = key_frame.user().color();
+        let color = Srgba::new(color[0], color[1], color[2], color[3]);
         debug.add_rectangle_2d(min, max, position_z, color);
     }
     Some(())
