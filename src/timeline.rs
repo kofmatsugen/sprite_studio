@@ -1,12 +1,14 @@
-use crate::types::{
-    animation_instance::InstanceKeyBuilder,
-    bound_type::Bounds,
-    from_user::FromUser,
-    from_user::NonDecodedUser,
-    key_frame::{KeyFrame, KeyFrameBuilder},
-    linear_color::LinearColor,
-    part_info::{PartInfo, PartInfoBuilder},
-    part_type::PartType,
+use crate::{
+    traits::from_user::FromUser,
+    types::{
+        animation_instance::InstanceKeyBuilder,
+        bound_type::Bounds,
+        key_frame::{KeyFrame, KeyFrameBuilder},
+        linear_color::LinearColor,
+        non_decode_user::NonDecodedUser,
+        part_info::{PartInfo, PartInfoBuilder},
+        part_type::PartType,
+    },
 };
 use amethyst::core::Transform;
 use itertools::izip;

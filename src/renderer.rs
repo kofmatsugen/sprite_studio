@@ -1,7 +1,8 @@
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
     resource::AnimationStore,
-    types::{animation_instance::InstanceKey, from_user::FromUser},
+    traits::from_user::FromUser,
+    types::animation_instance::InstanceKey,
     SpriteAnimation,
 };
 use amethyst::{

@@ -1,5 +1,10 @@
-use super::from_user::{FromUser, NonDecodedUser};
-use crate::types::animation_instance::{InstanceKey, InstanceKeyBuilder};
+use crate::{
+    traits::from_user::FromUser,
+    types::{
+        animation_instance::{InstanceKey, InstanceKeyBuilder},
+        non_decode_user::NonDecodedUser,
+    },
+};
 use amethyst::{core::Transform, renderer::resources::Tint};
 use serde::{Deserialize, Serialize};
 

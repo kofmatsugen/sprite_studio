@@ -1,17 +1,17 @@
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
     resource::AnimationStore,
-    types::from_user::FromUser,
+    traits::from_user::FromUser,
     SpriteAnimation,
 };
 use amethyst::{
     assets::AssetStorage,
     core::{
-        math::{Matrix4, Point2, Point4},
+        math::{Matrix4, Point2},
         transform::Transform,
     },
     ecs::{Entities, Join, Read, ReadStorage, System, SystemData, World, WriteStorage},
-    renderer::{debug_drawing::DebugLinesComponent, palette::rgb::Srgba},
+    renderer::{debug_drawing::DebugLinesComponent, palette::rgb::Srgba, ActiveCamera},
 };
 use serde::Serialize;
 use std::{collections::BTreeMap, marker::PhantomData};
@@ -37,6 +37,7 @@ where
 {
     type SystemData = (
         Entities<'s>,
+        Read<'s, ActiveCamera>,
         Read<'s, AnimationStore<K, U>>,
         Read<'s, AssetStorage<SpriteAnimation<U>>>,
         ReadStorage<'s, Transform>,
@@ -53,6 +54,7 @@ where
         &mut self,
         (
             entities,
+            camera,
             animation_store,
             sprite_animation_storage,
             transforms,
@@ -61,6 +63,15 @@ where
             animation_keys,
         ): Self::SystemData,
     ) {
+        let camera_z = camera
+            .entity
+            .and_then(|entity| transforms.get(entity))
+            .map(|transform| transform.translation().z - 1.);
+        if camera_z.is_none() == true {
+            return;
+        }
+        let position_z = camera_z.unwrap();
+
         for (e, transform, key, current) in
             (&*entities, &transforms, &animation_keys, &animation_times).join()
         {
@@ -79,6 +90,7 @@ where
                 key,
                 &animation_store,
                 &sprite_animation_storage,
+                position_z,
             );
         }
     }
@@ -91,6 +103,7 @@ fn draw_collision<K, U>(
     key: &PlayAnimationKey<K>,
     animation_store: &Read<AnimationStore<K, U>>,
     sprite_animation_storage: &Read<AssetStorage<SpriteAnimation<U>>>,
+    position_z: f32,
 ) -> Option<()>
 where
     K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
@@ -152,7 +165,7 @@ where
         let min = Point2::new(x - width / 2., y - height / 2.);
         let max = Point2::new(x + width / 2., y + height / 2.);
         let color = Srgba::new(1., 0., 0., 1.);
-        debug.add_rectangle_2d(min, max, 200.0, color);
+        debug.add_rectangle_2d(min, max, position_z, color);
     }
     Some(())
 }

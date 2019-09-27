@@ -4,6 +4,7 @@ pub mod resource;
 pub(crate) mod shaders;
 pub mod system;
 pub mod timeline;
+pub mod traits;
 pub mod types;
 
 use amethyst::{
@@ -12,7 +13,7 @@ use amethyst::{
 };
 use serde::*;
 use timeline::TimeLine;
-use types::from_user::FromUser;
+use traits::from_user::FromUser;
 
 #[derive(Serialize, Deserialize)]
 pub struct SpriteAnimation<U>

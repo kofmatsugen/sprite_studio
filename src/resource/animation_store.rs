@@ -1,4 +1,4 @@
-use crate::{types::from_user::FromUser, SpriteAnimationHandle};
+use crate::{traits::from_user::FromUser, SpriteAnimationHandle};
 use amethyst::renderer::sprite::SpriteSheetHandle;
 use serde::Serialize;
 use std::collections::BTreeMap;
