@@ -1,5 +1,5 @@
-pub(crate) mod from_user;
 pub(crate) mod collision_color;
+pub(crate) mod from_user;
 
-pub use from_user::FromUser;
 pub use collision_color::CollisionColor;
+pub use from_user::FromUser;
