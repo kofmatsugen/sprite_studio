@@ -356,7 +356,6 @@ impl TimeLineBuilder {
             linear_color.1 = color.1;
             linear_color.2 = color.2;
             linear_color.3 = alpha;
-
             let key_frame = KeyFrameBuilder::new()
                 .user(u)
                 .transform(transform)

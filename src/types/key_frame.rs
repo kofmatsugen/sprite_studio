@@ -121,7 +121,7 @@ impl KeyFrameBuilder {
         KeyFrame {
             user: self
                 .user
-                .map(|val| U::from_user(val.integer, val.point, val.rect, val.text)),
+                .and_then(|val| U::from_user(val.integer, val.point, val.rect, val.text)),
             transform: self.transform,
             visible: self.visible,
             cell: self.cell,

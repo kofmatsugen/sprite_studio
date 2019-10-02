@@ -6,6 +6,7 @@ pub mod system;
 pub mod timeline;
 pub mod traits;
 pub mod types;
+pub mod utils;
 
 use amethyst::{
     assets::{Asset, Handle},

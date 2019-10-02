@@ -39,12 +39,23 @@ use amethyst::{
 };
 use serde::Serialize;
 use std::collections::BTreeMap;
+use std::marker::PhantomData;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct RenderSpriteAnimation<K, U> {
-    _key: std::marker::PhantomData<K>,
-    _user: std::marker::PhantomData<U>,
+    _key: PhantomData<K>,
+    _user: PhantomData<U>,
     target: Target,
+}
+
+impl<K, U> Default for RenderSpriteAnimation<K, U>{
+    fn default() -> Self{
+        RenderSpriteAnimation{
+            _key: PhantomData,
+            _user: PhantomData,
+            target: Default::default(),
+        }
+    }
 }
 
 impl<K, U> RenderSpriteAnimation<K, U> {

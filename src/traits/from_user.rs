@@ -1,10 +1,13 @@
-pub trait FromUser {
+pub trait FromUser
+where
+    Self: std::marker::Sized,
+{
     fn from_user(
         integer: Option<i32>,
         point: Option<(f32, f32)>,
         rect: Option<(f32, f32, f32, f32)>,
         text: Option<String>,
-    ) -> Self;
+    ) -> Option<Self>;
 }
 
 impl FromUser for () {
@@ -13,51 +16,51 @@ impl FromUser for () {
         _point: Option<(f32, f32)>,
         _rect: Option<(f32, f32, f32, f32)>,
         _text: Option<String>,
-    ) -> Self {
-        ()
+    ) -> Option<Self> {
+        Some(())
     }
 }
 
-impl FromUser for Option<i32> {
+impl FromUser for i32 {
     fn from_user(
         integer: Option<i32>,
         _point: Option<(f32, f32)>,
         _rect: Option<(f32, f32, f32, f32)>,
         _text: Option<String>,
-    ) -> Self {
+    ) -> Option<Self> {
         integer
     }
 }
 
-impl FromUser for Option<(f32, f32)> {
+impl FromUser for (f32, f32) {
     fn from_user(
         _integer: Option<i32>,
         point: Option<(f32, f32)>,
         _rect: Option<(f32, f32, f32, f32)>,
         _text: Option<String>,
-    ) -> Self {
+    ) -> Option<Self> {
         point
     }
 }
 
-impl FromUser for Option<(f32, f32, f32, f32)> {
+impl FromUser for (f32, f32, f32, f32) {
     fn from_user(
         _integer: Option<i32>,
         _point: Option<(f32, f32)>,
         rect: Option<(f32, f32, f32, f32)>,
         _text: Option<String>,
-    ) -> Self {
+    ) -> Option<Self> {
         rect
     }
 }
 
-impl FromUser for Option<String> {
+impl FromUser for String {
     fn from_user(
         _integer: Option<i32>,
         _point: Option<(f32, f32)>,
         _rect: Option<(f32, f32, f32, f32)>,
         text: Option<String>,
-    ) -> Self {
+    ) -> Option<Self> {
         text
     }
 }
