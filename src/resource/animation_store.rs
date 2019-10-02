@@ -1,20 +1,22 @@
-use crate::{traits::from_user::FromUser, SpriteAnimationHandle};
+use crate::{
+    traits::{AnimationKey, AnimationUser},
+    SpriteAnimationHandle,
+};
 use amethyst::renderer::sprite::SpriteSheetHandle;
-use serde::Serialize;
 use std::collections::BTreeMap;
 
 pub struct AnimationStore<K, U>
 where
-    K: std::hash::Hash + PartialOrd + Ord,
-    U: FromUser + Serialize,
+    K: AnimationKey,
+    U: AnimationUser,
 {
     stores: BTreeMap<K, AnimationData<U>>,
 }
 
 impl<K, U> AnimationStore<K, U>
 where
-    K: std::hash::Hash + PartialOrd + Ord,
-    U: FromUser + Serialize,
+    K: AnimationKey,
+    U: AnimationUser,
 {
     pub fn insert_animation<N: Into<K>>(
         &mut self,
@@ -55,8 +57,8 @@ where
 
 impl<K, U> Default for AnimationStore<K, U>
 where
-    K: std::hash::Hash + PartialOrd + Ord,
-    U: FromUser + Serialize,
+    K: AnimationKey,
+    U: AnimationUser,
 {
     fn default() -> Self {
         AnimationStore {
@@ -67,7 +69,7 @@ where
 
 pub struct AnimationData<U>
 where
-    U: FromUser + Serialize,
+    U: AnimationUser,
 {
     animations: Vec<Vec<SpriteAnimationHandle<U>>>,
     sprite_sheets: Vec<SpriteSheetHandle>,
@@ -75,7 +77,7 @@ where
 
 impl<U> Default for AnimationData<U>
 where
-    U: FromUser + Serialize,
+    U: AnimationUser,
 {
     fn default() -> Self {
         AnimationData {
@@ -87,7 +89,7 @@ where
 
 impl<U> AnimationData<U>
 where
-    U: FromUser + Serialize,
+    U: AnimationUser,
 {
     pub fn animation(&self, pack_id: usize, anim_id: usize) -> Option<&SpriteAnimationHandle<U>> {
         self.animations

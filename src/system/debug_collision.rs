@@ -1,7 +1,7 @@
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
     resource::AnimationStore,
-    traits::{collision_color::CollisionColor, from_user::FromUser},
+    traits::{collision_color::CollisionColor, AnimationKey, AnimationUser},
     SpriteAnimation,
 };
 use amethyst::{
@@ -13,7 +13,6 @@ use amethyst::{
     ecs::{Entities, Join, Read, ReadStorage, System, SystemData, World, WriteStorage},
     renderer::{debug_drawing::DebugLinesComponent, palette::rgb::Srgba, ActiveCamera},
 };
-use serde::Serialize;
 use std::{collections::BTreeMap, marker::PhantomData};
 
 pub struct DebugCollisionSystem<K, U> {
@@ -32,8 +31,8 @@ impl<K, U> DebugCollisionSystem<K, U> {
 
 impl<'s, K, U> System<'s> for DebugCollisionSystem<K, U>
 where
-    K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
-    U: 'static + Send + Sync + FromUser + CollisionColor + Serialize,
+    K: AnimationKey,
+    U: AnimationUser + CollisionColor,
 {
     type SystemData = (
         Entities<'s>,
@@ -106,8 +105,8 @@ fn draw_collision<K, U>(
     position_z: f32,
 ) -> Option<()>
 where
-    K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
-    U: 'static + Send + Sync + FromUser + CollisionColor + Serialize,
+    K: AnimationKey,
+    U: AnimationUser + CollisionColor,
 {
     debug.clear();
 

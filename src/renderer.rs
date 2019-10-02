@@ -1,7 +1,7 @@
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
     resource::AnimationStore,
-    traits::from_user::FromUser,
+    traits::{AnimationKey, AnimationUser},
     types::animation_instance::InstanceKey,
     SpriteAnimation,
 };
@@ -37,7 +37,6 @@ use amethyst::{
         util::simple_shader_set,
     },
 };
-use serde::Serialize;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
@@ -48,9 +47,9 @@ pub struct RenderSpriteAnimation<K, U> {
     target: Target,
 }
 
-impl<K, U> Default for RenderSpriteAnimation<K, U>{
-    fn default() -> Self{
-        RenderSpriteAnimation{
+impl<K, U> Default for RenderSpriteAnimation<K, U> {
+    fn default() -> Self {
+        RenderSpriteAnimation {
             _key: PhantomData,
             _user: PhantomData,
             target: Default::default(),
@@ -68,8 +67,8 @@ impl<K, U> RenderSpriteAnimation<K, U> {
 
 impl<B: Backend, K, U> RenderPlugin<B> for RenderSpriteAnimation<K, U>
 where
-    K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
-    U: 'static + Send + Sync + FromUser + Serialize + std::fmt::Debug,
+    K: AnimationKey,
+    U: AnimationUser,
 {
     fn on_build<'a, 'b>(
         &mut self,
@@ -118,8 +117,8 @@ impl<K, U> DrawSpriteAnimationDesc<K, U> {
 
 impl<B: Backend, K, U> RenderGroupDesc<B, World> for DrawSpriteAnimationDesc<K, U>
 where
-    K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
-    U: 'static + Send + Sync + FromUser + Serialize + std::fmt::Debug,
+    K: AnimationKey,
+    U: AnimationUser,
 {
     fn build(
         self,
@@ -177,8 +176,8 @@ pub struct DrawSpriteAnimation<B: Backend, K, U> {
 impl<B, K, U> RenderGroup<B, World> for DrawSpriteAnimation<B, K, U>
 where
     B: Backend,
-    K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
-    U: 'static + Send + Sync + FromUser + Serialize + std::fmt::Debug,
+    K: AnimationKey,
+    U: AnimationUser,
 {
     fn prepare(
         &mut self,
@@ -417,8 +416,8 @@ fn build_animation<B, K, U>(
 ) -> Option<Vec<(TextureId, SpriteArgs)>>
 where
     B: Backend,
-    K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
-    U: 'static + Send + Sync + FromUser + Serialize + std::fmt::Debug,
+    K: AnimationKey,
+    U: AnimationUser,
 {
     let (key, pack_id, anim_id) = animation_key;
     let (anim_data, root_animation) = animation_store
@@ -562,8 +561,8 @@ fn build_animation_instance<B, K, U>(
 ) -> Option<Vec<(TextureId, SpriteArgs)>>
 where
     B: Backend,
-    K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
-    U: 'static + Send + Sync + FromUser + Serialize + std::fmt::Debug,
+    K: AnimationKey,
+    U: AnimationUser,
 {
     let (key, pack_id, anim_id) = animation_key;
     let (anim_data, root_animation) = animation_store

@@ -1,7 +1,7 @@
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
     resource::AnimationStore,
-    traits::from_user::FromUser,
+    traits::{AnimationUser, AnimationKey},
     SpriteAnimation,
 };
 use amethyst::{
@@ -12,7 +12,6 @@ use amethyst::{
         ReaderId, System, SystemData, World, WriteStorage,
     },
 };
-use serde::Serialize;
 use std::marker::PhantomData;
 
 pub struct TimeLineApplySystem<K, U> {
@@ -35,8 +34,8 @@ impl<K, U> TimeLineApplySystem<K, U> {
 
 impl<'s, K, U> System<'s> for TimeLineApplySystem<K, U>
 where
-    K: 'static + Send + Sync + std::hash::Hash + PartialOrd + Ord + std::fmt::Debug,
-    U: 'static + Send + Sync + FromUser + Serialize,
+    K: AnimationKey,
+    U: AnimationUser,
 {
     type SystemData = (
         Entities<'s>,
