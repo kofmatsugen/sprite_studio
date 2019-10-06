@@ -1,4 +1,5 @@
 pub mod components;
+pub mod iter;
 pub mod renderer;
 pub mod resource;
 pub(crate) mod shaders;
@@ -55,7 +56,7 @@ where
         self.fps
     }
 
-    pub fn timelines(&self) -> impl Iterator<Item = &TimeLine<U>> {
+    pub fn timelines(&self) -> impl DoubleEndedIterator<Item = &TimeLine<U>> {
         self.timelines.iter()
     }
 

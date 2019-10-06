@@ -5,7 +5,10 @@ use crate::{
         non_decode_user::NonDecodedUser,
     },
 };
-use amethyst::{core::Transform, renderer::resources::Tint};
+use amethyst::{
+    core::Transform,
+    renderer::{palette::rgb::Srgba, resources::Tint},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -27,7 +30,7 @@ where
     visible: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     cell: Option<(usize, usize)>,
-    #[serde(skip_serializing_if = "skip_tint", default = "Tint::default")]
+    #[serde(skip_serializing_if = "skip_tint", default = "tint_default")]
     color: Tint,
     #[serde(skip_serializing_if = "Option::is_none")]
     instance_key: Option<InstanceKey>,
@@ -156,4 +159,8 @@ fn skip_tint(color: &Tint) -> bool {
             .all(|(c, d)| *c == *d)
     };
     eq_default
+}
+
+fn tint_default() -> Tint {
+    Tint(Srgba::new(1., 1., 1., 1.))
 }

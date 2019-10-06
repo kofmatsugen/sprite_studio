@@ -21,8 +21,10 @@ impl<K> PlayAnimationKey<K> {
         self.animation_key = key.into();
     }
 
-    pub fn key(&self) -> Option<&(K, PackId, AnimationId)> {
-        self.animation_key.as_ref()
+    pub fn key(&self) -> Option<(&K, PackId, AnimationId)> {
+        self.animation_key
+            .as_ref()
+            .map(|(k, pack_id, anim_id)| (k, *pack_id, *anim_id))
     }
 }
 

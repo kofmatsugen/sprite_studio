@@ -1,5 +1,6 @@
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
+    iter::AnimationNodes,
     resource::AnimationStore,
     traits::{collision_color::CollisionColor, AnimationKey, AnimationUser},
     SpriteAnimation,
@@ -110,50 +111,33 @@ where
 {
     debug.clear();
 
-    let (key, pack_id, anim_id) = key
-        .key()
-        .map(|(key, pack_id, anim_id)| (key, *pack_id, *anim_id))?;
-
-    let (_anim_data, root_animation) = animation_store
-        .animation(key)
-        .and_then(|anim_data| {
-            anim_data
-                .animation(pack_id, anim_id)
-                .map(|handle| (anim_data, handle))
-        })
-        .and_then(|(anim_data, handle)| {
-            sprite_animation_storage
-                .get(handle)
-                .map(|animation| (anim_data, animation))
-        })?;
-
-    // 経過時間とアニメーションFPSからフレーム数算出
-    let fps = root_animation.fps();
-    let current = (current.current_time() * (fps as f32)).floor() as usize;
-    let current = current % root_animation.total_frame();
+    let nodes = AnimationNodes::new(
+        key.key()?,
+        current.current_time(),
+        animation_store,
+        sprite_animation_storage,
+    )?;
 
     let mut global_matrixs = BTreeMap::new();
-    for (_part_info, key_frame, collision) in root_animation
-        .timelines()
-        .map(|tl| (tl.part_info(), tl.key_frame(current)))
-        .map(|(part_info, key_frame)| {
+    for (_id, _info, key_frame, collision) in nodes
+        .map(|(id, part_info, key_frame, _)| {
             let part_id = part_info.part_id();
             let parent_id = part_info.parent_id();
 
             // 親の位置からグローバル座標を算出．親がいなければルートが親
             let parent_matrix = parent_id
-                .map(|parent_id| global_matrixs[&parent_id])
+                .map(|parent_id| global_matrixs[&(id, parent_id)])
                 .unwrap_or(root_matrix);
 
             // グローバル座標計算
             let global_matrix = parent_matrix * key_frame.transform().matrix();
 
             // 後ろのパーツの計算のために BTreeMap にセット
-            global_matrixs.insert(part_id, global_matrix);
+            global_matrixs.insert((id, part_id), global_matrix);
 
-            (part_info, key_frame, global_matrix)
+            (id, part_info, key_frame, global_matrix)
         })
-        .filter(|(part_info, key_frame, _)| key_frame.visible() && part_info.bounds().is_some())
+        .filter(|(_, part_info, key_frame, _)| key_frame.visible() && part_info.bounds().is_some())
     {
         let collision: &[[f32; 4]; 4] = collision.as_ref();
         let width = collision[0][0];

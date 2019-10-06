@@ -30,6 +30,11 @@ impl AnimationTime {
         self.current_time += delta * (self.play_speed);
     }
 
+    pub fn add_second(&mut self, delta_sec: f32) {
+        self.prev_time = self.current_time.into();
+        self.current_time += delta_sec;
+    }
+
     pub fn current_time(&self) -> f32 {
         self.current_time
     }
