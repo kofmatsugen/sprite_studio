@@ -11,7 +11,7 @@ use amethyst::{
         math::{Matrix4, Vector4},
         transform::Transform,
     },
-    ecs::{DispatcherBuilder, Join, Read, ReadStorage, SystemData, World},
+    ecs::{DispatcherBuilder, Join, Read, ReadStorage, SystemData, World, WorldExt},
     error::Error,
     renderer::{
         batch::{GroupIterator, OneLevelBatch},
@@ -72,9 +72,10 @@ where
 {
     fn on_build<'a, 'b>(
         &mut self,
-        _world: &mut World,
+        world: &mut World,
         builder: &mut DispatcherBuilder<'a, 'b>,
     ) -> Result<(), Error> {
+        world.register::<PlayAnimationKey<K>>();
         builder.add(
             SpriteVisibilitySortingSystem::new(),
             "sprite_visibility_system",

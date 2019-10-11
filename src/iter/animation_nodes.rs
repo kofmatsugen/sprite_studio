@@ -1,50 +1,85 @@
 use crate::{
     resource::{animation_store::AnimationData, AnimationStore},
-    types::{animation_instance::InstanceKey, key_frame::KeyFrame, part_info::PartInfo},
+    traits::{AnimationKey, AnimationUser},
+    types::animation_instance::InstanceKey,
+    types::node::Node,
+    utils::{convert_time_to_frame, convert_time_to_frame_range},
     SpriteAnimation,
 };
 use amethyst::assets::AssetStorage;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-use crate::traits::{AnimationKey, AnimationUser};
-
-type Node<'a, U> = (u64, &'a PartInfo, &'a KeyFrame<U>, &'a AnimationData<U>);
-
-pub struct AnimationNodes<'a, K, U>
+pub struct AnimationNodes<'a, U>
 where
-    K: AnimationKey,
     U: AnimationUser,
 {
-    key: &'a K,
     nodes: Vec<Node<'a, U>>,
     storage: &'a AssetStorage<SpriteAnimation<U>>,
-    animation_store: &'a AnimationStore<K, U>,
+    animation_data: &'a AnimationData<U>,
 }
 
-impl<'a, K, U> AnimationNodes<'a, K, U>
+impl<'a, U> AnimationNodes<'a, U>
 where
-    K: AnimationKey,
     U: AnimationUser,
 {
-    pub fn new(
+    pub fn new<K>(
         data_key: (&'a K, usize, usize),
         animation_time: f32,
         animation_store: &'a AnimationStore<K, U>,
         storage: &'a AssetStorage<SpriteAnimation<U>>,
-    ) -> Option<Self> {
+    ) -> Option<Self>
+    where
+        K: AnimationKey,
+    {
+        let (key, pack_id, anim_id) = data_key;
+        let animation_data = animation_store.animation(key)?;
         Some(AnimationNodes {
-            key: data_key.0,
-            nodes: make_nodes(data_key, animation_time, animation_store, storage)?,
+            nodes: make_nodes((pack_id, anim_id), animation_time, animation_data, storage)?,
             storage,
-            animation_store,
+            animation_data,
         })
+    }
+
+    pub(crate) fn range<K>(
+        data_key: (&'a K, usize, usize),
+        start: f32,
+        end: f32,
+        animation_store: &'a AnimationStore<K, U>,
+        storage: &'a AssetStorage<SpriteAnimation<U>>,
+    ) -> Option<Vec<Self>>
+    where
+        K: AnimationKey,
+    {
+        let (key, pack_id, anim_id) = data_key;
+        let mut hasher = DefaultHasher::new();
+        (pack_id, anim_id).hash(&mut hasher);
+        let animation_data = animation_store.animation(key)?;
+
+        let root_animation = animation_data
+            .animation(pack_id, anim_id)
+            .and_then(|handle| storage.get(handle))?;
+
+        Some(
+            convert_time_to_frame_range(start, end, root_animation)
+                .map(|frame| AnimationNodes {
+                    nodes: make_nodes_from_frame(
+                        hasher.finish(),
+                        frame,
+                        root_animation,
+                        animation_data,
+                    ),
+                    storage,
+                    animation_data,
+                })
+                .rev()
+                .collect(),
+        )
     }
 }
 
-impl<'a, K, U> Iterator for AnimationNodes<'a, K, U>
+impl<'a, U> Iterator for AnimationNodes<'a, U>
 where
-    K: AnimationKey,
     U: AnimationUser,
 {
     type Item = Node<'a, U>;
@@ -61,8 +96,8 @@ where
         ) {
             (true, Some(ref_anim), Some(instance_key)) => {
                 if instance_key.independent() == false {
-                    let anim_key = (self.key, ref_anim.pack_id(), ref_anim.animation_id());
-                    make_instance_nodes(anim_key, instance_key, self.animation_store, self.storage)
+                    let anim_key = (ref_anim.pack_id(), ref_anim.animation_id());
+                    make_instance_nodes(anim_key, instance_key, self.animation_data, self.storage)
                         .map(|mut nodes| {
                             self.nodes.append(&mut nodes);
                         });
@@ -75,63 +110,64 @@ where
     }
 }
 
-fn make_nodes<'a, K, U>(
-    key: (&K, usize, usize),
+fn make_nodes_from_frame<'a, U>(
+    hash_id: u64,
+    frame: usize,
+    data: &'a SpriteAnimation<U>,
+    anim_data: &'a AnimationData<U>,
+) -> Vec<Node<'a, U>>
+where
+    U: AnimationUser,
+{
+    data.timelines()
+        .map(|tl| (hash_id, tl.part_info(), tl.key_frame(frame), anim_data))
+        .rev()
+        .collect()
+}
+
+fn make_nodes<'a, U>(
+    key: (usize, usize),
     animation_time: f32,
-    animation_store: &'a AnimationStore<K, U>,
+    animation_data: &'a AnimationData<U>,
     storage: &'a AssetStorage<SpriteAnimation<U>>,
 ) -> Option<Vec<Node<'a, U>>>
 where
-    K: AnimationKey,
     U: AnimationUser,
 {
     let mut hasher = DefaultHasher::new();
     key.hash(&mut hasher);
 
-    let (key, pack_id, anim_id) = key;
+    let (pack_id, anim_id) = key;
 
-    let anim_data = animation_store.animation(key)?;
-    let root_animation = anim_data
+    let root_animation = animation_data
         .animation(pack_id, anim_id)
         .and_then(|handle| storage.get(handle))?;
 
-    let fps = root_animation.fps();
-    let current = (animation_time * (fps as f32)).floor() as usize;
-    let current = current % root_animation.total_frame();
+    let frame = convert_time_to_frame(animation_time, root_animation);
 
-    Some(
-        root_animation
-            .timelines()
-            .map(|tl| {
-                (
-                    hasher.finish(),
-                    tl.part_info(),
-                    tl.key_frame(current),
-                    anim_data,
-                )
-            })
-            .rev()
-            .collect(),
-    )
+    Some(make_nodes_from_frame(
+        hasher.finish(),
+        frame,
+        root_animation,
+        animation_data,
+    ))
 }
 
-fn make_instance_nodes<'a, K, U>(
-    key: (&K, usize, usize),
+fn make_instance_nodes<'a, U>(
+    key: (usize, usize),
     instance_key: &InstanceKey,
-    animation_store: &'a AnimationStore<K, U>,
+    animation_data: &'a AnimationData<U>,
     storage: &'a AssetStorage<SpriteAnimation<U>>,
 ) -> Option<Vec<Node<'a, U>>>
 where
-    K: AnimationKey,
     U: AnimationUser,
 {
     let mut hasher = DefaultHasher::new();
     key.hash(&mut hasher);
 
-    let (key, pack_id, anim_id) = key;
+    let (pack_id, anim_id) = key;
 
-    let anim_data = animation_store.animation(key)?;
-    let root_animation = anim_data
+    let root_animation = animation_data
         .animation(pack_id, anim_id)
         .and_then(|handle| storage.get(handle))?;
     // 経過時間とアニメーションFPSからフレーム数算出
@@ -168,18 +204,10 @@ where
 
     log::debug!("[{:?}_{}_{}]: {} F", key, pack_id, anim_id, current);
 
-    Some(
-        root_animation
-            .timelines()
-            .map(|tl| {
-                (
-                    hasher.finish(),
-                    tl.part_info(),
-                    tl.key_frame(current),
-                    anim_data,
-                )
-            })
-            .rev()
-            .collect(),
-    )
+    Some(make_nodes_from_frame(
+        hasher.finish(),
+        current,
+        root_animation,
+        animation_data,
+    ))
 }

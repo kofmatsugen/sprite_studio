@@ -1,3 +1,4 @@
+pub mod bundle;
 pub mod components;
 pub mod iter;
 pub mod renderer;
