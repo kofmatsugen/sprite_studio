@@ -7,7 +7,7 @@ where
 {
     let fps = data.fps();
     let current = (animation_time * (fps as f32)).floor() as usize;
-    let current = current % data.total_frame();
+    let current = current;
 
     current
 }
@@ -22,9 +22,9 @@ where
 {
     let fps = data.fps();
     let animation_start = (animation_start * (fps as f32)).floor() as usize;
-    let animation_start = animation_start % data.total_frame();
+    let animation_start = animation_start;
     let animation_end = (animation_end * (fps as f32)).floor() as usize;
-    let animation_end = animation_end % data.total_frame();
+    let animation_end = animation_end;
 
     animation_start..animation_end + 1
 }

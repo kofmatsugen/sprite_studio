@@ -65,7 +65,7 @@ where
                 .map(|frame| AnimationNodes {
                     nodes: make_nodes_from_frame(
                         hasher.finish(),
-                        frame,
+                        frame % root_animation.total_frame(),
                         root_animation,
                         animation_data,
                     ),
@@ -120,7 +120,14 @@ where
     U: AnimationUser,
 {
     data.timelines()
-        .map(|tl| (hash_id, tl.part_info(), tl.key_frame(frame), anim_data))
+        .map(|tl| {
+            (
+                hash_id,
+                tl.part_info(),
+                tl.key_frame(frame % data.total_frame()),
+                anim_data,
+            )
+        })
         .rev()
         .collect()
 }
