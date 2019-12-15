@@ -1,5 +1,5 @@
 use crate::{
-    system::{AnimationTimeIncrementSystem, DebugCollisionSystem},
+    system::AnimationTimeIncrementSystem,
     traits::{AnimationKey, AnimationUser, CollisionColor},
     SpriteAnimation,
 };
@@ -86,7 +86,6 @@ where
             "animation_time_increment",
             &[],
         );
-        builder.add(DebugCollisionSystem::<K, U>::new(), "debug_collision", &[]);
         log::info!("build start");
         Ok(())
     }
