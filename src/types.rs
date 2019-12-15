@@ -13,4 +13,5 @@ pub use animation_ref::RefferenceAnimation;
 pub use bound_type::Bounds;
 pub use key_frame::KeyFrame;
 pub use linear_color::LinearColor;
+pub use node::Node;
 pub use part_type::PartType;

@@ -7,8 +7,6 @@ use crate::{
     SpriteAnimation,
 };
 use amethyst::assets::AssetStorage;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 
 pub struct AnimationNodes<'a, U>
 where
@@ -52,8 +50,6 @@ where
         K: AnimationKey,
     {
         let (key, pack_id, anim_id) = data_key;
-        let mut hasher = DefaultHasher::new();
-        (pack_id, anim_id).hash(&mut hasher);
         let animation_data = animation_store.animation(key)?;
 
         let root_animation = animation_data
@@ -64,7 +60,8 @@ where
             convert_time_to_frame_range(start, end, root_animation)
                 .map(|frame| AnimationNodes {
                     nodes: make_nodes_from_frame(
-                        hasher.finish(),
+                        pack_id,
+                        anim_id,
                         frame % root_animation.total_frame(),
                         root_animation,
                         animation_data,
@@ -87,7 +84,11 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let item = self.nodes.pop()?;
 
-        let (_, part_info, key_frame, _) = item;
+        let Node {
+            part_info,
+            key_frame,
+            ..
+        } = item;
 
         match (
             key_frame.visible(),
@@ -111,7 +112,8 @@ where
 }
 
 fn make_nodes_from_frame<'a, U>(
-    hash_id: u64,
+    pack_id: usize,
+    anim_id: usize,
     frame: usize,
     data: &'a SpriteAnimation<U>,
     anim_data: &'a AnimationData<U>,
@@ -120,13 +122,12 @@ where
     U: AnimationUser,
 {
     data.timelines()
-        .map(|tl| {
-            (
-                hash_id,
-                tl.part_info(),
-                tl.key_frame(frame % data.total_frame()),
-                anim_data,
-            )
+        .map(|tl| Node {
+            pack_id,
+            anim_id,
+            part_info: tl.part_info(),
+            key_frame: tl.key_frame(frame % data.total_frame()),
+            animation: anim_data,
         })
         .rev()
         .collect()
@@ -141,9 +142,6 @@ fn make_nodes<'a, U>(
 where
     U: AnimationUser,
 {
-    let mut hasher = DefaultHasher::new();
-    key.hash(&mut hasher);
-
     let (pack_id, anim_id) = key;
 
     let root_animation = animation_data
@@ -153,7 +151,8 @@ where
     let frame = convert_time_to_frame(animation_time, root_animation);
 
     Some(make_nodes_from_frame(
-        hasher.finish(),
+        pack_id,
+        anim_id,
         frame,
         root_animation,
         animation_data,
@@ -169,9 +168,6 @@ fn make_instance_nodes<'a, U>(
 where
     U: AnimationUser,
 {
-    let mut hasher = DefaultHasher::new();
-    key.hash(&mut hasher);
-
     let (pack_id, anim_id) = key;
 
     let root_animation = animation_data
@@ -212,7 +208,8 @@ where
     log::debug!("[{:?}_{}_{}]: {} F", key, pack_id, anim_id, current);
 
     Some(make_nodes_from_frame(
-        hasher.finish(),
+        pack_id,
+        anim_id,
         current,
         root_animation,
         animation_data,
