@@ -1,6 +1,6 @@
 use crate::{
     system::AnimationTimeIncrementSystem,
-    traits::{AnimationKey, AnimationUser, CollisionColor},
+    traits::{AnimationKey, AnimationUser},
     SpriteAnimation,
 };
 
@@ -13,35 +13,21 @@ use amethyst::{
 };
 use std::marker::PhantomData;
 
-pub struct WithoutDebugCollision;
-pub struct WithDebugCollision;
-
-pub struct SpriteStudioBundleBuilder;
-
-impl SpriteStudioBundleBuilder {
-    pub fn new<K, U>() -> SpriteStudioBundle<K, U, WithoutDebugCollision> {
-        SpriteStudioBundle {
-            _key: PhantomData,
-            _user: PhantomData,
-            _debug_collisiton: PhantomData,
-        }
-    }
-    pub fn with_debug_collision<K, U>() -> SpriteStudioBundle<K, U, WithDebugCollision> {
-        SpriteStudioBundle {
-            _key: PhantomData,
-            _user: PhantomData,
-            _debug_collisiton: PhantomData,
-        }
-    }
-}
-
-pub struct SpriteStudioBundle<K, U, D> {
+pub struct SpriteStudioBundle<K, U> {
     _key: PhantomData<K>,
     _user: PhantomData<U>,
-    _debug_collisiton: PhantomData<D>,
 }
 
-impl<'a, 'b, K, U> SystemBundle<'a, 'b> for SpriteStudioBundle<K, U, WithoutDebugCollision>
+impl<K, U> SpriteStudioBundle<K, U> {
+    pub fn new() -> Self {
+        SpriteStudioBundle {
+            _key: PhantomData,
+            _user: PhantomData,
+        }
+    }
+}
+
+impl<'a, 'b, K, U> SystemBundle<'a, 'b> for SpriteStudioBundle<K, U>
 where
     K: AnimationKey,
     U: AnimationUser,
@@ -61,32 +47,6 @@ where
             "animation_time_increment",
             &[],
         );
-        Ok(())
-    }
-}
-
-impl<'a, 'b, K, U> SystemBundle<'a, 'b> for SpriteStudioBundle<K, U, WithDebugCollision>
-where
-    K: AnimationKey,
-    U: AnimationUser + CollisionColor,
-{
-    fn build(
-        self,
-        _world: &mut World,
-        builder: &mut DispatcherBuilder,
-    ) -> Result<(), amethyst::Error> {
-        log::info!("build start");
-        builder.add(
-            Processor::<SpriteAnimation<U>>::new(),
-            "sprite_animation_processor",
-            &[],
-        );
-        builder.add(
-            AnimationTimeIncrementSystem::new(),
-            "animation_time_increment",
-            &[],
-        );
-        log::info!("build start");
         Ok(())
     }
 }
