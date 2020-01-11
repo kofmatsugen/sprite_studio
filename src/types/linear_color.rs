@@ -1,6 +1,7 @@
 use amethyst::renderer::{palette::rgb::Srgba, resources::Tint};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct LinearColor(pub f32, pub f32, pub f32, pub f32);
 
 impl Default for LinearColor {
@@ -31,6 +32,19 @@ impl std::ops::Add<LinearColor> for LinearColor {
             self.1 + rhs.1,
             self.2 + rhs.2,
             self.3 + rhs.3,
+        )
+    }
+}
+
+impl std::ops::Sub<LinearColor> for LinearColor {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        LinearColor(
+            self.0 - rhs.0,
+            self.1 - rhs.1,
+            self.2 - rhs.2,
+            self.3 - rhs.3,
         )
     }
 }

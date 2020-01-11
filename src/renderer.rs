@@ -1,10 +1,7 @@
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
-    iter::AnimationNodes,
-    resource::AnimationStore,
-    traits::{AnimationKey, AnimationUser},
-    types::node::Node,
-    SpriteAnimation,
+    resource::{data::AnimationData, AnimationStore},
+    traits::{AnimationKey, AnimationUser, FileId},
 };
 use amethyst::{
     assets::{AssetStorage, Handle},
@@ -38,27 +35,34 @@ use amethyst::{
         util::simple_shader_set,
     },
 };
-use std::collections::BTreeMap;
-use std::marker::PhantomData;
+use std::{
+    collections::BTreeMap,
+    hash::{Hash, Hasher},
+    marker::PhantomData,
+};
 
 #[derive(Debug)]
-pub struct RenderSpriteAnimation<K, U> {
-    _key: PhantomData<K>,
+pub struct RenderSpriteAnimation<ID, P, A, U> {
+    _file_id: PhantomData<ID>,
+    _pack_name: PhantomData<P>,
+    _animation_name: PhantomData<A>,
     _user: PhantomData<U>,
     target: Target,
 }
 
-impl<K, U> Default for RenderSpriteAnimation<K, U> {
+impl<ID, P, A, U> Default for RenderSpriteAnimation<ID, P, A, U> {
     fn default() -> Self {
         RenderSpriteAnimation {
-            _key: PhantomData,
+            _file_id: PhantomData,
+            _pack_name: PhantomData,
+            _animation_name: PhantomData,
             _user: PhantomData,
             target: Default::default(),
         }
     }
 }
 
-impl<K, U> RenderSpriteAnimation<K, U> {
+impl<ID, P, A, U> RenderSpriteAnimation<ID, P, A, U> {
     /// Set target to which 2d sprites will be rendered.
     pub fn with_target(mut self, target: Target) -> Self {
         self.target = target;
@@ -66,9 +70,11 @@ impl<K, U> RenderSpriteAnimation<K, U> {
     }
 }
 
-impl<B: Backend, K, U> RenderPlugin<B> for RenderSpriteAnimation<K, U>
+impl<B: Backend, ID, P, A, U> RenderPlugin<B> for RenderSpriteAnimation<ID, P, A, U>
 where
-    K: AnimationKey,
+    ID: FileId,
+    P: AnimationKey,
+    A: AnimationKey,
     U: AnimationUser,
 {
     fn on_build<'a, 'b>(
@@ -76,7 +82,7 @@ where
         world: &mut World,
         builder: &mut DispatcherBuilder<'a, 'b>,
     ) -> Result<(), Error> {
-        world.register::<PlayAnimationKey<K>>();
+        world.register::<PlayAnimationKey<ID, P, A>>();
         builder.add(
             SpriteVisibilitySortingSystem::new(),
             "sprite_visibility_system",
@@ -94,7 +100,7 @@ where
         plan.extend_target(self.target, |ctx| {
             ctx.add(
                 RenderOrder::Transparent,
-                DrawSpriteAnimationDesc::<K, U>::new().builder(),
+                DrawSpriteAnimationDesc::<ID, P, A, U>::new().builder(),
             )?;
             Ok(())
         });
@@ -102,24 +108,31 @@ where
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct DrawSpriteAnimationDesc<K, U> {
-    _key: std::marker::PhantomData<K>,
+#[derive(Debug)]
+pub struct DrawSpriteAnimationDesc<ID, P, A, U> {
+    _file_id: PhantomData<ID>,
+    _pack_name: PhantomData<P>,
+    _animation_name: PhantomData<A>,
     _user: std::marker::PhantomData<U>,
 }
 
-impl<K, U> DrawSpriteAnimationDesc<K, U> {
+impl<ID, P, A, U> DrawSpriteAnimationDesc<ID, P, A, U> {
     fn new() -> Self {
         DrawSpriteAnimationDesc {
-            _key: std::marker::PhantomData,
+            _file_id: PhantomData,
+            _pack_name: PhantomData,
+            _animation_name: PhantomData,
             _user: std::marker::PhantomData,
         }
     }
 }
 
-impl<B: Backend, K, U> RenderGroupDesc<B, World> for DrawSpriteAnimationDesc<K, U>
+impl<B, ID, P, A, U> RenderGroupDesc<B, World> for DrawSpriteAnimationDesc<ID, P, A, U>
 where
-    K: AnimationKey,
+    B: Backend,
+    ID: FileId,
+    P: AnimationKey,
+    A: AnimationKey,
     U: AnimationUser,
 {
     fn build(
@@ -150,35 +163,41 @@ where
             vec![env.raw_layout(), textures.raw_layout()],
         )?;
 
-        Ok(Box::new(DrawSpriteAnimation::<B, K, U> {
+        Ok(Box::new(DrawSpriteAnimation::<B, ID, P, A, U> {
             pipeline,
             pipeline_layout,
             env,
             textures,
             vertex,
             sprites: Default::default(),
-            _key: std::marker::PhantomData,
+            _file_id: PhantomData,
+            _pack_name: PhantomData,
+            _animation_name: PhantomData,
             _user: std::marker::PhantomData,
         }))
     }
 }
 
 #[derive(Debug)]
-pub struct DrawSpriteAnimation<B: Backend, K, U> {
+pub struct DrawSpriteAnimation<B: Backend, ID, P, A, U> {
     pipeline: B::GraphicsPipeline,
     pipeline_layout: B::PipelineLayout,
     env: FlatEnvironmentSub<B>,
     textures: TextureSub<B>,
     vertex: DynamicVertexBuffer<B, SpriteArgs>,
     sprites: OneLevelBatch<TextureId, SpriteArgs>,
-    _key: std::marker::PhantomData<K>,
+    _file_id: PhantomData<ID>,
+    _pack_name: PhantomData<P>,
+    _animation_name: PhantomData<A>,
     _user: std::marker::PhantomData<U>,
 }
 
-impl<B, K, U> RenderGroup<B, World> for DrawSpriteAnimation<B, K, U>
+impl<B, ID, P, A, U> RenderGroup<B, World> for DrawSpriteAnimation<B, ID, P, A, U>
 where
     B: Backend,
-    K: AnimationKey,
+    ID: FileId,
+    P: AnimationKey,
+    A: AnimationKey,
     U: AnimationUser,
 {
     fn prepare(
@@ -192,8 +211,8 @@ where
         let (
             sprite_sheet_storage,
             tex_storage,
-            animation_store,
             sprite_animation_storage,
+            animation_store,
             transforms,
             tints,
             animation_times,
@@ -201,12 +220,12 @@ where
         ) = <(
             Read<AssetStorage<SpriteSheet>>,
             Read<AssetStorage<Texture>>,
-            Read<AnimationStore<K, U>>,
-            Read<AssetStorage<SpriteAnimation<U>>>,
+            Read<AssetStorage<AnimationData<U>>>,
+            Read<AnimationStore<ID, U>>,
             ReadStorage<Transform>,
             ReadStorage<Tint>,
             ReadStorage<AnimationTime>,
-            ReadStorage<PlayAnimationKey<K>>,
+            ReadStorage<PlayAnimationKey<ID, P, A>>,
         )>::fetch(world);
 
         self.env.process(factory, index, world);
@@ -226,9 +245,9 @@ where
         {
             let current_time = current.current_time();
             let matrix = *transform.global_matrix();
-            let key = match key.key() {
-                Some(key) => key,
-                None => continue,
+            let key = match (key.file_id(), key.pack_name(), key.animation_name()) {
+                (id, Some(pack), Some(anim)) => (id, pack, anim),
+                _ => continue,
             };
             let color = tint
                 .map(|tint| {
@@ -404,12 +423,12 @@ fn from_global_matrix_data<'a>(
     ))
 }
 
-fn build_animation<B, K, U>(
-    animation_key: (&K, usize, usize),
+fn build_animation<B, ID, P, A, U>(
+    (id, &pack_id, &animation_id): (&ID, &P, &A),
     current_time: f32,
     root_color: [f32; 4],
-    animation_store: &Read<AnimationStore<K, U>>,
-    sprite_animation_storage: &Read<AssetStorage<SpriteAnimation<U>>>,
+    animation_store: &Read<AnimationStore<ID, U>>,
+    sprite_animation_storage: &Read<AssetStorage<AnimationData<U>>>,
     sprite_sheet_storage: &Read<AssetStorage<SpriteSheet>>,
     tex_storage: &Read<AssetStorage<Texture>>,
     root_matrix: Matrix4<f32>,
@@ -419,93 +438,119 @@ fn build_animation<B, K, U>(
 ) -> Option<Vec<(TextureId, SpriteArgs)>>
 where
     B: Backend,
-    K: AnimationKey,
+    ID: FileId,
+    P: AnimationKey,
+    A: AnimationKey,
     U: AnimationUser,
 {
-    let nodes = AnimationNodes::new(
-        animation_key,
-        current_time,
-        animation_store,
-        sprite_animation_storage,
-    )?;
+    let pack = animation_store
+        .get_animation_handle(id)
+        .and_then(|handle| sprite_animation_storage.get(handle))
+        .and_then(|data| data.pack(&pack_id.to_string()))?;
 
+    let animation = pack.animation(&animation_id.to_string())?;
+    let frame = animation.sec_to_frame_loop(current_time);
     let mut global_matrixs = BTreeMap::new();
     let mut global_colors = BTreeMap::new();
 
-    let groups = nodes.filter_map(
-        |Node {
-             pack_id,
-             anim_id,
-             part_info,
-             key_frame,
-             animation,
-         }| {
-            let part_id = part_info.part_id();
-            let parent_id = part_info.parent_id();
-            // 親の位置からグローバル座標を算出．親がいなければルートが親
-            let parent_matrix = match parent_id {
-                Some(parent_id) => global_matrixs[&(pack_id, anim_id, parent_id)],
-                None => root_matrix,
-            };
+    let groups = pack.parts().enumerate().filter_map(|(part_id, part)| {
+        let parent_id = part.parent_id().map(|parent_id| parent_id as usize);
+        let hash_key = {
+            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            pack_id.hash(&mut hasher);
+            animation_id.hash(&mut hasher);
+            part_id.hash(&mut hasher);
+            hasher.finish()
+        };
 
-            // 親の色を踏襲する
-            let parent_color = match parent_id {
-                Some(parent_id) => global_colors[&(pack_id, anim_id, parent_id)],
-                None => root_color,
-            };
-
-            // グローバル座標計算
-            let global_matrix = parent_matrix * key_frame.transform().matrix();
-
-            // 後ろのパーツのサイズ計算のために BTreeMap にセット
-            global_matrixs.insert((pack_id, anim_id, part_id), global_matrix);
-
-            // 乗算カラー値計算
-            let (r, g, b, a) = key_frame.color().0.into_components();
-            let part_color = [r, g, b, a];
-            let mut global_color = [0.; 4];
-            for i in 0..4 {
-                global_color[i] = part_color[i] * parent_color[i];
-            }
-            // 後ろのパーツの色計算のために BTreeMap にセット
-            global_colors.insert((pack_id, anim_id, part_id), global_color);
-
-            // 以下で描画設定
-            // 表示が不要ならここで終了
-            if key_frame.visible() == false {
-                return None;
+        // 親の位置からグローバル座標を算出．親がいなければルートが親
+        let parent_matrix = match parent_id {
+            Some(parent_id) => {
+                let hash_key = {
+                    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                    pack_id.hash(&mut hasher);
+                    animation_id.hash(&mut hasher);
+                    parent_id.hash(&mut hasher);
+                    hasher.finish()
+                };
+                global_matrixs[&hash_key]
             }
 
-            log::debug!("{}: {:?} => {:?}", part_id, part_color, global_color);
-            let command = key_frame
-                .cell()
-                .and_then(|(map_id, sprite_index)| {
-                    animation
-                        .sprite_sheet(map_id)
-                        .map(|sheet| (sheet, sprite_index))
+            None => root_matrix,
+        };
+
+        // 親の色を踏襲する
+        let parent_color = match parent_id {
+            Some(parent_id) => {
+                let hash_key = {
+                    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                    pack_id.hash(&mut hasher);
+                    animation_id.hash(&mut hasher);
+                    parent_id.hash(&mut hasher);
+                    hasher.finish()
+                };
+                global_colors[&hash_key]
+            }
+            None => root_color,
+        };
+
+        // グローバル座標計算
+        let global_matrix = parent_matrix * animation.local_transform(part_id, frame).matrix();
+
+        // 後ろのパーツのサイズ計算のために BTreeMap にセット
+        global_matrixs.insert(hash_key, global_matrix);
+
+        // 乗算カラー値計算
+        let (r, g, b, a) = animation.local_color(part_id, frame).0.into_components();
+        let part_color = [r, g, b, a];
+        let mut global_color = [0.; 4];
+        for i in 0..4 {
+            global_color[i] = part_color[i] * parent_color[i];
+        }
+        // 後ろのパーツの色計算のために BTreeMap にセット
+        global_colors.insert(hash_key, global_color);
+
+        // 以下で描画設定
+        // 表示が不要ならここで終了
+        if animation.hide(part_id, frame) == true {
+            return None;
+        }
+
+        let command = animation
+            .cell(part_id, frame)
+            .and_then(|cell| {
+                let map_id = cell.map_id();
+                let cell_id = cell.cell_id();
+                let handle = match animation_store.get_sprite_handle(id, map_id) {
+                    Some(handle) => Some(handle),
+                    None => {
+                        log::error!("notfound {:?}", (map_id, cell_id));
+                        None
+                    }
+                }?;
+                Some((handle, cell_id))
+            })
+            .and_then(|(sprite_sheet, sprite_no)| {
+                from_global_matrix_data(
+                    tex_storage,
+                    sprite_sheet_storage,
+                    &sprite_sheet,
+                    sprite_no,
+                    &global_matrix,
+                    global_color,
+                )
+                .and_then(|(batch_data, texture)| {
+                    let (tex_id, _) = textures_ref.insert(
+                        factory,
+                        world,
+                        texture,
+                        hal::image::Layout::ShaderReadOnlyOptimal,
+                    )?;
+                    Some((tex_id, batch_data))
                 })
-                .and_then(|(sprite_sheet, sprite_no)| {
-                    from_global_matrix_data(
-                        tex_storage,
-                        sprite_sheet_storage,
-                        &sprite_sheet,
-                        sprite_no,
-                        &global_matrix,
-                        global_color,
-                    )
-                    .and_then(|(batch_data, texture)| {
-                        let (tex_id, _) = textures_ref.insert(
-                            factory,
-                            world,
-                            texture,
-                            hal::image::Layout::ShaderReadOnlyOptimal,
-                        )?;
-                        Some((tex_id, batch_data))
-                    })
-                });
+            });
 
-            command
-        },
-    );
+        command
+    });
     Some(groups.collect())
 }

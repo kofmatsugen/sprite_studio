@@ -1,7 +1,5 @@
 use crate::{
-    system::AnimationTimeIncrementSystem,
-    traits::{AnimationKey, AnimationUser},
-    SpriteAnimation,
+    resource::data::AnimationData, system::AnimationTimeIncrementSystem, traits::AnimationUser,
 };
 
 use amethyst::{
@@ -13,23 +11,18 @@ use amethyst::{
 };
 use std::marker::PhantomData;
 
-pub struct SpriteStudioBundle<K, U> {
-    _key: PhantomData<K>,
+pub struct SpriteStudioBundle<U> {
     _user: PhantomData<U>,
 }
 
-impl<K, U> SpriteStudioBundle<K, U> {
+impl<U> SpriteStudioBundle<U> {
     pub fn new() -> Self {
-        SpriteStudioBundle {
-            _key: PhantomData,
-            _user: PhantomData,
-        }
+        SpriteStudioBundle { _user: PhantomData }
     }
 }
 
-impl<'a, 'b, K, U> SystemBundle<'a, 'b> for SpriteStudioBundle<K, U>
+impl<'a, 'b, U> SystemBundle<'a, 'b> for SpriteStudioBundle<U>
 where
-    K: AnimationKey,
     U: AnimationUser,
 {
     fn build(
@@ -38,7 +31,7 @@ where
         builder: &mut DispatcherBuilder,
     ) -> Result<(), amethyst::Error> {
         builder.add(
-            Processor::<SpriteAnimation<U>>::new(),
+            Processor::<AnimationData<U>>::new(),
             "sprite_animation_processor",
             &[],
         );

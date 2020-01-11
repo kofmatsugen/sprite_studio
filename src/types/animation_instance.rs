@@ -6,7 +6,6 @@ pub struct InstanceKey {
     independent: bool, // 独立動作(true のときは新たにエンティティ生成する)
     #[serde(skip_serializing_if = "Option::is_none")]
     loop_num: Option<usize>, // ループ回数(None のときは無限)
-    play_frame: usize, // 再生位置
     start_offset: usize, // 再生開始位置
     end_offset: usize, // 再生終了位置
     reverse: bool,     // 逆再生
@@ -21,10 +20,6 @@ impl InstanceKey {
 
     pub fn loop_num(&self) -> Option<usize> {
         self.loop_num
-    }
-
-    pub fn play_frame(&self) -> usize {
-        self.play_frame
     }
 
     pub fn start_offset(&self) -> usize {
@@ -55,7 +50,6 @@ pub struct InstanceKeyBuilder {
     speed_rate: Option<f32>,
     independent: Option<bool>, // 独立動作(true のときは新たにエンティティ生成する)
     loop_num: Option<usize>,   // ループ回数(None のときは無限)
-    play_frame: Option<usize>, // 再生フレーム
     start_offset: Option<usize>, // 再生開始位置
     end_offset: Option<usize>, // 再生終了位置
     reverse: Option<bool>,     // 逆再生
@@ -63,6 +57,10 @@ pub struct InstanceKeyBuilder {
 }
 
 impl InstanceKeyBuilder {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
     pub fn infinity(mut self, infinity: bool) -> Self {
         self.infinity = infinity.into();
         self
@@ -78,9 +76,8 @@ impl InstanceKeyBuilder {
         self
     }
 
-    pub fn play_frame(mut self, play_frame: usize) -> Self {
-        self.play_frame = play_frame.into();
-        self.start_offset = play_frame.into();
+    pub fn start_offset(mut self, start_offset: usize) -> Self {
+        self.start_offset = start_offset.into();
         self
     }
 
@@ -102,27 +99,6 @@ impl InstanceKeyBuilder {
         self
     }
 
-    // 現在のデータから次のキーを作成
-    pub fn next_key(&self) -> Option<Self> {
-        if let Some(true) = self.independent {
-            // 独立再生の場合は続かない
-            None
-        } else {
-            InstanceKeyBuilder {
-                infinity: self.infinity,
-                speed_rate: self.speed_rate,
-                independent: self.independent, // 独立動作(true のときは新たにエンティティ生成する)
-                loop_num: self.loop_num,       // ループ回数(None のときは無限)
-                play_frame: self.play_frame.map(|frame| frame + 1), // 再生開始位置
-                start_offset: self.start_offset,
-                end_offset: self.end_offset, // 再生終了位置
-                reverse: self.reverse,       // 逆再生
-                pingpong: self.pingpong,     // 往復再生
-            }
-            .into()
-        }
-    }
-
     pub fn build(self) -> InstanceKey {
         let loop_num = if let Some(true) = self.infinity {
             None
@@ -133,7 +109,6 @@ impl InstanceKeyBuilder {
             speed_rate: self.speed_rate.unwrap_or(1.),
             independent: self.independent.unwrap_or(false), // 独立動作(true のときは新たにエンティティ生成する)
             loop_num,                                       // ループ回数(None のときは無限)
-            play_frame: self.play_frame.unwrap_or(0),       // 再生開始位置
             start_offset: self.start_offset.unwrap_or(0),
             end_offset: self.end_offset.unwrap_or(0), // 再生終了位置
             reverse: self.reverse.unwrap_or(false),   // 逆再生
