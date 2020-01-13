@@ -13,28 +13,84 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PartTimeline<U> {
     // 非表示
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     hide: TimeLine<bool>,
 
     // セル情報
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     cell: TimeLine<Cell>,
 
     // 座標情報
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     pos_x: TimeLine<f32>,
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     pos_y: TimeLine<f32>,
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     pos_z: TimeLine<f32>,
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     scale_x: TimeLine<f32>,
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     scale_y: TimeLine<f32>,
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     rotated: TimeLine<f32>,
     // 反転情報
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     flip_v: TimeLine<bool>,
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     flip_h: TimeLine<bool>,
     // 色情報
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     alpha: TimeLine<f32>,
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     color: TimeLine<LinearColor>,
 
     // カスタムデータ
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     user: TimeLine<U>,
     // アニメーションインスタンス
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
     instance: TimeLine<InstanceKey>,
 }
 

@@ -7,26 +7,25 @@ pub struct TimeLine<T> {
     key_frames: Vec<KeyFrame<T>>,
 }
 
-impl<T> Default for TimeLine<T> {
-    fn default() -> Self {
-        TimeLine { key_frames: vec![] }
-    }
-}
-
 // デフォルト実装．補完できないものでもステップ形式のキーフレーム取得はサポートする
 // コピー実装は不要なので参照を返す
 impl<T> TimeLine<T> {
-    // シリアライズ時のスキップ条件
-    pub(crate) fn is_empty(&self) -> bool {
-        self.key_frames.is_empty()
-    }
-
     pub fn get_step_key(&self, frame: usize) -> Option<&T> {
         self.key_frames
             .iter()
             .rev()
             .find(|k| k.frame <= frame)
             .map(|k| &k.value)
+    }
+    // シリアライズ時のスキップ条件
+    pub(crate) fn is_empty(&self) -> bool {
+        self.key_frames.is_empty()
+    }
+
+    // デシリアライズ時に存在しなければデフォルト値にするための関数
+    // Default trait だと外部から生成できてしまうためcrate内関数
+    pub(crate) fn default() -> Self {
+        TimeLine { key_frames: vec![] }
     }
 }
 
