@@ -1,7 +1,7 @@
 use crate::components::AnimationTime;
 use amethyst::{
     core::timing::Time,
-    ecs::{Entities, Join, LazyUpdate, Read, ReadStorage, System, SystemData, World},
+    ecs::{Join, Read, System, SystemData, World, WriteStorage},
 };
 
 pub struct AnimationTimeIncrementSystem;
@@ -13,24 +13,16 @@ impl AnimationTimeIncrementSystem {
 }
 
 impl<'s> System<'s> for AnimationTimeIncrementSystem {
-    type SystemData = (
-        Entities<'s>,
-        Read<'s, LazyUpdate>,
-        Read<'s, Time>,
-        ReadStorage<'s, AnimationTime>,
-    );
+    type SystemData = (Read<'s, Time>, WriteStorage<'s, AnimationTime>);
 
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
     }
 
-    fn run(&mut self, (entities, lazy, time, animation_times): Self::SystemData) {
+    fn run(&mut self, (time, mut animation_times): Self::SystemData) {
         let delta_sec = time.delta_seconds();
-
-        for (e, anim_time) in (&*entities, &animation_times).join() {
-            let mut anim_time = anim_time.clone();
+        for (anim_time,) in (&mut animation_times,).join() {
             anim_time.add_time(delta_sec);
-            lazy.insert(e, anim_time);
         }
     }
 }

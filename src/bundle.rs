@@ -1,5 +1,7 @@
 use crate::{
-    resource::data::AnimationData, system::AnimationTimeIncrementSystem, traits::AnimationUser,
+    resource::data::AnimationData,
+    system::{AnimationTimeIncrementSystem, AnimationTransitionSystem},
+    traits::translate_animation::TranslateAnimation,
 };
 
 use amethyst::{
@@ -11,19 +13,21 @@ use amethyst::{
 };
 use std::marker::PhantomData;
 
-pub struct SpriteStudioBundle<U> {
-    _user: PhantomData<U>,
+pub struct SpriteStudioBundle<T> {
+    _translate: PhantomData<T>,
 }
 
-impl<U> SpriteStudioBundle<U> {
+impl<T> SpriteStudioBundle<T> {
     pub fn new() -> Self {
-        SpriteStudioBundle { _user: PhantomData }
+        SpriteStudioBundle {
+            _translate: PhantomData,
+        }
     }
 }
 
-impl<'a, 'b, U> SystemBundle<'a, 'b> for SpriteStudioBundle<U>
+impl<'a, 'b, T> SystemBundle<'a, 'b> for SpriteStudioBundle<T>
 where
-    U: AnimationUser,
+    T: for<'c> TranslateAnimation<'c> + 'a,
 {
     fn build(
         self,
@@ -31,7 +35,7 @@ where
         builder: &mut DispatcherBuilder,
     ) -> Result<(), amethyst::Error> {
         builder.add(
-            Processor::<AnimationData<U>>::new(),
+            Processor::<AnimationData<T::UserData>>::new(),
             "sprite_animation_processor",
             &[],
         );
@@ -39,6 +43,11 @@ where
             AnimationTimeIncrementSystem::new(),
             "animation_time_increment",
             &[],
+        );
+        builder.add(
+            AnimationTransitionSystem::<T>::new(),
+            "animation_translate",
+            &["animation_time_increment"],
         );
         Ok(())
     }

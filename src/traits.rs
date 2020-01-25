@@ -1,5 +1,6 @@
 pub mod animation_file;
 pub(crate) mod interpolate;
+pub mod translate_animation;
 use serde::{de::DeserializeOwned, Serialize};
 
 // トレイトのエイリアス定義

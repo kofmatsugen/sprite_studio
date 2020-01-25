@@ -60,6 +60,7 @@ impl WorldExt for &mut World {
             )| {
                 let dir_path = dir_path.into();
                 let path = format!("{}/animation/animation.anim.ron", dir_path);
+                log::info!("load animation: {:?}", path);
                 let handle = loader.load(path, RonFormat, progress, &storage);
 
                 store.animations.insert(id, handle);
@@ -89,18 +90,16 @@ impl WorldExt for &mut World {
                 let dir_path = dir_path.into();
                 let mut sheets = vec![];
                 for i in 0..sprite_sheet_num {
-                    let texture = loader.load(
-                        format!("{}/image/sprite{:03}.png", dir_path, i),
-                        ImageFormat::default(),
-                        (),
-                        &tex_storage,
-                    );
-                    let sheet = loader.load(
-                        format!("{}/sheet/sprite{:03}.sheet.ron", dir_path, i),
-                        SpriteSheetFormat(texture),
-                        (),
-                        &sprite_storage,
-                    );
+                    let sprite_path = format!("{}/image/sprite{:03}.png", dir_path, i);
+                    let sheet_path = format!("{}/sheet/sprite{:03}.sheet.ron", dir_path, i);
+
+                    log::info!("load sprite: {:?}", sprite_path);
+                    log::info!("load sheet: {:?}", sheet_path);
+
+                    let texture =
+                        loader.load(sprite_path, ImageFormat::default(), (), &tex_storage);
+                    let sheet =
+                        loader.load(sheet_path, SpriteSheetFormat(texture), (), &sprite_storage);
                     sheets.push(sheet);
                 }
 
@@ -139,7 +138,9 @@ pub trait WorldExt {
         ID: FileId + AnimationFile,
         U: AnimationUser,
     {
-        self.load_animation_with_path::<_, ID, U>(id, id.to_file_name(), progress);
+        let file_name = id.to_file_name();
+        log::info!("load {}", file_name);
+        self.load_animation_with_path::<_, ID, U>(id, file_name, progress);
     }
 
     fn load_sprite_sheet<ID, U>(&mut self, id: ID, progress: &mut ProgressCounter)
@@ -147,12 +148,10 @@ pub trait WorldExt {
         ID: FileId + AnimationFile,
         U: AnimationUser,
     {
-        self.load_sprite_with_path::<_, ID, U>(
-            id,
-            id.to_file_name(),
-            id.sprite_sheet_num(),
-            progress,
-        );
+        let file_name = id.to_file_name();
+        let num = id.sprite_sheet_num();
+        log::info!("load {} of num {}", file_name, num);
+        self.load_sprite_with_path::<_, ID, U>(id, file_name, num, progress);
     }
 
     fn load_animation_files<ID, U>(&mut self, id: ID, progress: &mut ProgressCounter)

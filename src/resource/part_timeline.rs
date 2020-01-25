@@ -109,11 +109,17 @@ impl<U> PartTimeline<U> {
     // 座標に関連するフレームは常に存在するはずなので，存在しなければクラッシュ
     pub fn local_transform(&self, frame: usize) -> Transform {
         let pos_x = self.pos_x.get_interpolation_key(frame).unwrap_or(0.);
+        log::trace!("\tpos_x: {}", pos_x);
         let pos_y = self.pos_y.get_interpolation_key(frame).unwrap_or(0.);
+        log::trace!("\tpos_y: {}", pos_y);
         let pos_z = self.pos_z.get_interpolation_key(frame).unwrap_or(0.);
+        log::trace!("\tpos_z: {}", pos_z);
         let scale_x = self.scale_x.get_interpolation_key(frame).unwrap_or(1.);
+        log::trace!("\tscale_x: {}", scale_x);
         let scale_y = self.scale_y.get_interpolation_key(frame).unwrap_or(1.);
+        log::trace!("\tscale_y: {}", scale_y);
         let rotated = self.rotated.get_interpolation_key(frame).unwrap_or(0.);
+        log::trace!("\trotated: {}", rotated);
 
         let position = Translation3::new(pos_x, pos_y, pos_z);
         let rotation = UnitQuaternion::from_euler_angles(0., 0., rotated.to_radians());

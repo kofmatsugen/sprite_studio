@@ -5,11 +5,11 @@ authors = ["Kaneyuki Hiromasa <matsugen2511@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-serde = { version = "*", features = ["derive"] }
+serde = { version = "1.0.104", features = ["derive"] }
 amethyst = {git = "https://github.com/amethyst/amethyst.git", features = ["vulkan"] }
-itertools="*"
-ron="*"
-log="*"
-failure="*"
-lazy_static="*"
-num="*"
+itertools="0.8.2"
+ron="0.5.1"
+log={ version="0.4.8", features=["release_max_level_off"]}
+failure="0.1.6"
+lazy_static="1.4.0"
+num="0.2.1"

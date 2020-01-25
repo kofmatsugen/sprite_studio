@@ -60,8 +60,7 @@ where
                 Some((right_key.value - left_key.value) * rate + left_key.value)
             }
             (Some(left_key), None) => Some(left_key.value), // 後ろのキーがなければ補完は関係ない
-            (None, Some(_)) => unreachable!("left key none"), // 手前のキーが無いのに後ろのキーがあることはない
-            (None, None) => None,                             // どちらもキーがなければなにもない
+            _ => None, // キーが存在しないか手前のキーがなければ何もキーがない
         }
     }
 

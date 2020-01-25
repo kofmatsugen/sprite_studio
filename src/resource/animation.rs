@@ -19,6 +19,12 @@ impl<U> Animation<U> {
         self.total_frame
     }
 
+    pub fn total_secs(&self) -> f32 {
+        let float_fps = self.fps() as f32;
+        let float_frame = self.total_frame() as f32;
+        1.0 / float_fps * float_frame
+    }
+
     pub fn sec_to_frame(&self, seconds: f32) -> usize {
         let float_fps = self.fps() as f32;
         (seconds * float_fps) as usize
@@ -30,25 +36,31 @@ impl<U> Animation<U> {
     }
 
     pub fn hide(&self, part_id: usize, frame: usize) -> bool {
+        log::trace!("[hide] id: {}, frame: {}", part_id, frame);
         self.parts_timelines[part_id].hide(frame)
     }
     pub fn cell(&self, part_id: usize, frame: usize) -> Option<&Cell> {
+        log::trace!("[cell] id: {}, frame: {}", part_id, frame);
         self.parts_timelines[part_id].cell(frame)
     }
 
     pub fn local_transform(&self, part_id: usize, frame: usize) -> Transform {
+        log::trace!("[local_transform] id: {}, frame: {}", part_id, frame);
         self.parts_timelines[part_id].local_transform(frame)
     }
 
     pub fn local_color(&self, part_id: usize, frame: usize) -> Tint {
+        log::trace!("[local_color] id: {}, frame: {}", part_id, frame);
         self.parts_timelines[part_id].color(frame)
     }
 
     pub fn user(&self, part_id: usize, frame: usize) -> Option<&U> {
+        log::trace!("[user] id: {}, frame: {}", part_id, frame);
         self.parts_timelines[part_id].user(frame)
     }
 
     pub fn instance(&self, part_id: usize, frame: usize) -> Option<&InstanceKey> {
+        log::trace!("[instance] id: {}, frame: {}", part_id, frame);
         self.parts_timelines[part_id].instance(frame)
     }
 }
