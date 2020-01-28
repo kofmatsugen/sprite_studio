@@ -9,19 +9,30 @@ use std::collections::BTreeMap;
 // アニメーションデータ
 // SpriteStudio のプロジェクトファイル一個に相当する
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AnimationData<U> {
-    packs: BTreeMap<String, Pack<U>>,
+pub struct AnimationData<U, P = String, A = String>
+where
+    P: Ord + std::hash::Hash + Serialize,
+    A: Ord + std::hash::Hash + Serialize,
+{
+    #[serde(bound(deserialize = "BTreeMap<P, Pack<U, A>>: Deserialize<'de>"))]
+    packs: BTreeMap<P, Pack<U, A>>,
 }
 
-impl<U> AnimationData<U> {
-    pub fn pack(&self, pack_name: &str) -> Option<&Pack<U>> {
-        self.packs.get(pack_name)
+impl<U, P, A> AnimationData<U, P, A>
+where
+    P: Ord + std::hash::Hash + Serialize,
+    A: Ord + std::hash::Hash + Serialize,
+{
+    pub fn pack(&self, pack: &P) -> Option<&Pack<U, A>> {
+        self.packs.get(pack)
     }
 }
 
-impl<U> Asset for AnimationData<U>
+impl<U, P, A> Asset for AnimationData<U, P, A>
 where
     U: 'static + Serialize + Sync + Send,
+    P: 'static + Sync + Send + Ord + std::hash::Hash + Serialize,
+    A: 'static + Sync + Send + Ord + std::hash::Hash + Serialize,
 {
     const NAME: &'static str = "SPRITE_ANIMATION";
 
@@ -31,16 +42,24 @@ where
 
 //----------------------------------------------------
 // データ参照のみのためビルダーパターン
-pub struct AnimationDataBuilder<U> {
-    packs: BTreeMap<String, Pack<U>>,
+pub struct AnimationDataBuilder<U, P, A>
+where
+    P: Ord + std::hash::Hash + Serialize,
+    A: Ord + std::hash::Hash + Serialize,
+{
+    packs: BTreeMap<P, Pack<U, A>>,
 }
 
-impl<U> AnimationDataBuilder<U> {
-    pub fn new(packs: BTreeMap<String, Pack<U>>) -> Self {
+impl<U, P, A> AnimationDataBuilder<U, P, A>
+where
+    P: Ord + std::hash::Hash + Serialize,
+    A: Ord + std::hash::Hash + Serialize,
+{
+    pub fn new(packs: BTreeMap<P, Pack<U, A>>) -> Self {
         AnimationDataBuilder { packs }
     }
 
-    pub fn build(self) -> AnimationData<U> {
+    pub fn build(self) -> AnimationData<U, P, A> {
         AnimationData { packs: self.packs }
     }
 }

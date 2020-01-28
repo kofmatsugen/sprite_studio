@@ -74,7 +74,7 @@ impl WorldExt for &mut World {
         id: ID,
         dir_path: F,
         sprite_sheet_num: usize,
-        _progress: &mut ProgressCounter,
+        progress: &mut ProgressCounter,
     ) where
         ID: FileId + AnimationFile,
         U: AnimationUser,
@@ -96,10 +96,18 @@ impl WorldExt for &mut World {
                     log::info!("load sprite: {:?}", sprite_path);
                     log::info!("load sheet: {:?}", sheet_path);
 
-                    let texture =
-                        loader.load(sprite_path, ImageFormat::default(), (), &tex_storage);
-                    let sheet =
-                        loader.load(sheet_path, SpriteSheetFormat(texture), (), &sprite_storage);
+                    let texture = loader.load(
+                        sprite_path,
+                        ImageFormat::default(),
+                        &mut *progress,
+                        &tex_storage,
+                    );
+                    let sheet = loader.load(
+                        sheet_path,
+                        SpriteSheetFormat(texture),
+                        &mut *progress,
+                        &sprite_storage,
+                    );
                     sheets.push(sheet);
                 }
 
