@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 // アニメーションデータ
 // SpriteStudio のプロジェクトファイル一個に相当する
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AnimationData<U, P = String, A = String>
+pub struct AnimationData<U, P, A>
 where
     P: Ord + std::hash::Hash + Serialize,
     A: Ord + std::hash::Hash + Serialize,

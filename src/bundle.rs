@@ -14,13 +14,13 @@ use amethyst::{
 use std::marker::PhantomData;
 
 pub struct SpriteStudioBundle<T> {
-    _translate: PhantomData<T>,
+    _marker: PhantomData<T>,
 }
 
 impl<T> SpriteStudioBundle<T> {
     pub fn new() -> Self {
         SpriteStudioBundle {
-            _translate: PhantomData,
+            _marker: PhantomData,
         }
     }
 }
@@ -35,7 +35,7 @@ where
         builder: &mut DispatcherBuilder,
     ) -> Result<(), amethyst::Error> {
         builder.add(
-            Processor::<AnimationData<T::UserData>>::new(),
+            Processor::<AnimationData<T::UserData, T::PackKey, T::AnimationKey>>::new(),
             "sprite_animation_processor",
             &[],
         );

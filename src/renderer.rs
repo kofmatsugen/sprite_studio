@@ -220,8 +220,8 @@ where
         ) = <(
             Read<AssetStorage<SpriteSheet>>,
             Read<AssetStorage<Texture>>,
-            Read<AssetStorage<AnimationData<U>>>,
-            Read<AnimationStore<ID, U>>,
+            Read<AssetStorage<AnimationData<U, P, A>>>,
+            Read<AnimationStore<ID, U, P, A>>,
             ReadStorage<Transform>,
             ReadStorage<Tint>,
             ReadStorage<AnimationTime>,
@@ -427,8 +427,8 @@ fn build_animation<B, ID, P, A, U>(
     (id, &pack_id, &animation_id): (&ID, &P, &A),
     current_time: f32,
     root_color: [f32; 4],
-    animation_store: &Read<AnimationStore<ID, U>>,
-    sprite_animation_storage: &Read<AssetStorage<AnimationData<U>>>,
+    animation_store: &Read<AnimationStore<ID, U, P, A>>,
+    sprite_animation_storage: &Read<AssetStorage<AnimationData<U, P, A>>>,
     sprite_sheet_storage: &Read<AssetStorage<SpriteSheet>>,
     tex_storage: &Read<AssetStorage<Texture>>,
     root_matrix: Matrix4<f32>,
@@ -446,9 +446,9 @@ where
     let pack = animation_store
         .get_animation_handle(id)
         .and_then(|handle| sprite_animation_storage.get(handle))
-        .and_then(|data| data.pack(&pack_id.to_string()))?;
+        .and_then(|data| data.pack(&pack_id))?;
 
-    let animation = pack.animation(&animation_id.to_string())?;
+    let animation = pack.animation(&animation_id)?;
     let frame = animation.sec_to_frame_loop(current_time);
     let mut global_matrixs = BTreeMap::new();
     let mut global_colors = BTreeMap::new();

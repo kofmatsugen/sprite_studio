@@ -11,14 +11,12 @@ where
         + Send
         + Sync
         + std::fmt::Debug
-        + PartialOrd
-        + ToString
         + Ord
-        + PartialEq
-        + PartialOrd
         + std::hash::Hash
         + Copy
-        + Clone,
+        + Clone
+        + Serialize
+        + DeserializeOwned,
 {
 }
 
@@ -27,14 +25,12 @@ impl<T> AnimationKey for T where
         + Send
         + Sync
         + std::fmt::Debug
-        + PartialOrd
-        + ToString
         + Ord
-        + PartialEq
-        + PartialOrd
         + std::hash::Hash
         + Copy
         + Clone
+        + Serialize
+        + DeserializeOwned
 {
 }
 

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Pack<U, A = String>
+pub struct Pack<U, A>
 where
     A: Ord + std::hash::Hash + Serialize,
 {

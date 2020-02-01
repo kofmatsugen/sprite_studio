@@ -10,13 +10,13 @@ use amethyst::{
 use std::marker::PhantomData;
 
 pub struct AnimationTransitionSystem<T> {
-    _translate: PhantomData<T>,
+    _marker: PhantomData<T>,
 }
 
 impl<T> AnimationTransitionSystem<T> {
     pub fn new() -> Self {
         AnimationTransitionSystem {
-            _translate: PhantomData,
+            _marker: PhantomData,
         }
     }
 }
@@ -29,8 +29,8 @@ where
         Entities<'s>,
         WriteStorage<'s, AnimationTime>,
         WriteStorage<'s, PlayAnimationKey<T::FileId, T::PackKey, T::AnimationKey>>,
-        Read<'s, AssetStorage<AnimationData<T::UserData>>>,
-        Read<'s, AnimationStore<T::FileId, T::UserData>>,
+        Read<'s, AssetStorage<AnimationData<T::UserData, T::PackKey, T::AnimationKey>>>,
+        Read<'s, AnimationStore<T::FileId, T::UserData, T::PackKey, T::AnimationKey>>,
         T::OptionalData,
     );
 
@@ -59,8 +59,8 @@ where
             let animation = animation_store
                 .get_animation_handle(id)
                 .and_then(|handle| sprite_animation_storage.get(handle))
-                .and_then(|data| data.pack(&pack_id.to_string()))
-                .and_then(|pack| pack.animation(&anim_id.to_string()))
+                .and_then(|data| data.pack(pack_id))
+                .and_then(|pack| pack.animation(anim_id))
                 .unwrap();
 
             // ステート変化に関連する情報はルートにのみ入れる
