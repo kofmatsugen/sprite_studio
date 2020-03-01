@@ -44,7 +44,7 @@ where
     }
 }
 
-impl WorldExt for &mut World {
+impl AnimationLoad for &mut World {
     // パス名を指定してロード
     fn load_animation_with_path<F, ID, U, P, A>(
         &mut self,
@@ -125,7 +125,7 @@ impl WorldExt for &mut World {
     }
 }
 
-pub trait WorldExt {
+pub trait AnimationLoad {
     // パス名を指定してロード
     fn load_animation_with_path<F, ID, U, P, A>(
         &mut self,
