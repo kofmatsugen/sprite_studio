@@ -1,7 +1,7 @@
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
     resource::{data::AnimationData, AnimationStore},
-    traits::{AnimationKey, AnimationUser, FileId},
+    traits::translate_animation::TranslateAnimation,
 };
 use amethyst::{
     assets::{AssetStorage, Handle},
@@ -42,27 +42,21 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct RenderSpriteAnimation<ID, P, A, U> {
-    _file_id: PhantomData<ID>,
-    _pack_name: PhantomData<P>,
-    _animation_name: PhantomData<A>,
-    _user: PhantomData<U>,
+pub struct RenderSpriteAnimation<T> {
+    _translation: PhantomData<T>,
     target: Target,
 }
 
-impl<ID, P, A, U> Default for RenderSpriteAnimation<ID, P, A, U> {
+impl<T> Default for RenderSpriteAnimation<T> {
     fn default() -> Self {
         RenderSpriteAnimation {
-            _file_id: PhantomData,
-            _pack_name: PhantomData,
-            _animation_name: PhantomData,
-            _user: PhantomData,
+            _translation: PhantomData,
             target: Default::default(),
         }
     }
 }
 
-impl<ID, P, A, U> RenderSpriteAnimation<ID, P, A, U> {
+impl<T> RenderSpriteAnimation<T> {
     /// Set target to which 2d sprites will be rendered.
     pub fn with_target(mut self, target: Target) -> Self {
         self.target = target;
@@ -70,19 +64,17 @@ impl<ID, P, A, U> RenderSpriteAnimation<ID, P, A, U> {
     }
 }
 
-impl<B: Backend, ID, P, A, U> RenderPlugin<B> for RenderSpriteAnimation<ID, P, A, U>
+impl<'s, B, T> RenderPlugin<B> for RenderSpriteAnimation<T>
 where
-    ID: FileId,
-    P: AnimationKey,
-    A: AnimationKey,
-    U: AnimationUser,
+    B: Backend,
+    T: TranslateAnimation<'s> + std::fmt::Debug,
 {
     fn on_build<'a, 'b>(
         &mut self,
         world: &mut World,
         builder: &mut DispatcherBuilder<'a, 'b>,
     ) -> Result<(), Error> {
-        world.register::<PlayAnimationKey<ID, P, A>>();
+        world.register::<PlayAnimationKey<T::FileId, T::PackKey, T::AnimationKey>>();
         builder.add(
             SpriteVisibilitySortingSystem::new(),
             "sprite_visibility_system",
@@ -100,7 +92,7 @@ where
         plan.extend_target(self.target, |ctx| {
             ctx.add(
                 RenderOrder::Transparent,
-                DrawSpriteAnimationDesc::<ID, P, A, U>::new().builder(),
+                DrawSpriteAnimationDesc::<T>::new().builder(),
             )?;
             Ok(())
         });
@@ -109,31 +101,22 @@ where
 }
 
 #[derive(Debug)]
-pub struct DrawSpriteAnimationDesc<ID, P, A, U> {
-    _file_id: PhantomData<ID>,
-    _pack_name: PhantomData<P>,
-    _animation_name: PhantomData<A>,
-    _user: std::marker::PhantomData<U>,
+pub struct DrawSpriteAnimationDesc<T> {
+    _translation: PhantomData<T>,
 }
 
-impl<ID, P, A, U> DrawSpriteAnimationDesc<ID, P, A, U> {
+impl<T> DrawSpriteAnimationDesc<T> {
     fn new() -> Self {
         DrawSpriteAnimationDesc {
-            _file_id: PhantomData,
-            _pack_name: PhantomData,
-            _animation_name: PhantomData,
-            _user: std::marker::PhantomData,
+            _translation: PhantomData,
         }
     }
 }
 
-impl<B, ID, P, A, U> RenderGroupDesc<B, World> for DrawSpriteAnimationDesc<ID, P, A, U>
+impl<'s, B, T> RenderGroupDesc<B, World> for DrawSpriteAnimationDesc<T>
 where
     B: Backend,
-    ID: FileId,
-    P: AnimationKey,
-    A: AnimationKey,
-    U: AnimationUser,
+    T: TranslateAnimation<'s> + std::fmt::Debug,
 {
     fn build(
         self,
@@ -163,42 +146,33 @@ where
             vec![env.raw_layout(), textures.raw_layout()],
         )?;
 
-        Ok(Box::new(DrawSpriteAnimation::<B, ID, P, A, U> {
+        Ok(Box::new(DrawSpriteAnimation::<B, T> {
             pipeline,
             pipeline_layout,
             env,
             textures,
             vertex,
             sprites: Default::default(),
-            _file_id: PhantomData,
-            _pack_name: PhantomData,
-            _animation_name: PhantomData,
-            _user: std::marker::PhantomData,
+            _translation: PhantomData,
         }))
     }
 }
 
 #[derive(Debug)]
-pub struct DrawSpriteAnimation<B: Backend, ID, P, A, U> {
+pub struct DrawSpriteAnimation<B: Backend, T> {
     pipeline: B::GraphicsPipeline,
     pipeline_layout: B::PipelineLayout,
     env: FlatEnvironmentSub<B>,
     textures: TextureSub<B>,
     vertex: DynamicVertexBuffer<B, SpriteArgs>,
     sprites: OneLevelBatch<TextureId, SpriteArgs>,
-    _file_id: PhantomData<ID>,
-    _pack_name: PhantomData<P>,
-    _animation_name: PhantomData<A>,
-    _user: std::marker::PhantomData<U>,
+    _translation: PhantomData<T>,
 }
 
-impl<B, ID, P, A, U> RenderGroup<B, World> for DrawSpriteAnimation<B, ID, P, A, U>
+impl<'s, B, T> RenderGroup<B, World> for DrawSpriteAnimation<B, T>
 where
     B: Backend,
-    ID: FileId,
-    P: AnimationKey,
-    A: AnimationKey,
-    U: AnimationUser,
+    T: TranslateAnimation<'s> + std::fmt::Debug,
 {
     fn prepare(
         &mut self,
@@ -220,12 +194,12 @@ where
         ) = <(
             Read<AssetStorage<SpriteSheet>>,
             Read<AssetStorage<Texture>>,
-            Read<AssetStorage<AnimationData<U, P, A>>>,
-            Read<AnimationStore<ID, U, P, A>>,
+            Read<AssetStorage<AnimationData<T::UserData, T::PackKey, T::AnimationKey>>>,
+            Read<AnimationStore<T::FileId, T::UserData, T::PackKey, T::AnimationKey>>,
             ReadStorage<Transform>,
             ReadStorage<Tint>,
             ReadStorage<AnimationTime>,
-            ReadStorage<PlayAnimationKey<ID, P, A>>,
+            ReadStorage<PlayAnimationKey<T::FileId, T::PackKey, T::AnimationKey>>,
         )>::fetch(world);
 
         self.env.process(factory, index, world);
@@ -256,7 +230,7 @@ where
                 })
                 .unwrap_or([1.0; 4]);
 
-            build_animation(
+            build_animation::<B, T>(
                 key,
                 current_time,
                 color,
@@ -423,12 +397,14 @@ fn from_global_matrix_data<'a>(
     ))
 }
 
-fn build_animation<B, ID, P, A, U>(
-    (id, &pack_id, &animation_id): (&ID, &P, &A),
+fn build_animation<'s, B, T>(
+    (id, &pack_id, &animation_id): (&T::FileId, &T::PackKey, &T::AnimationKey),
     current_time: f32,
     root_color: [f32; 4],
-    animation_store: &Read<AnimationStore<ID, U, P, A>>,
-    sprite_animation_storage: &Read<AssetStorage<AnimationData<U, P, A>>>,
+    animation_store: &Read<AnimationStore<T::FileId, T::UserData, T::PackKey, T::AnimationKey>>,
+    sprite_animation_storage: &Read<
+        AssetStorage<AnimationData<T::UserData, T::PackKey, T::AnimationKey>>,
+    >,
     sprite_sheet_storage: &Read<AssetStorage<SpriteSheet>>,
     tex_storage: &Read<AssetStorage<Texture>>,
     root_matrix: Matrix4<f32>,
@@ -438,10 +414,7 @@ fn build_animation<B, ID, P, A, U>(
 ) -> Option<Vec<(TextureId, SpriteArgs)>>
 where
     B: Backend,
-    ID: FileId,
-    P: AnimationKey,
-    A: AnimationKey,
-    U: AnimationUser,
+    T: TranslateAnimation<'s>,
 {
     let pack = animation_store
         .get_animation_handle(id)
