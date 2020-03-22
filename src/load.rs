@@ -1,6 +1,6 @@
 use crate::{
     resource::{data, AnimationStore},
-    traits::{animation_file::AnimationFile, AnimationKey, AnimationUser, FileId},
+    traits::translate_animation::TranslateAnimation,
 };
 use amethyst::{
     assets::{AssetStorage, Loader, ProgressCounter, RonFormat},
@@ -13,23 +13,20 @@ use amethyst::{
 
 impl AnimationLoad for &mut World {
     // パス名を指定してロード
-    fn load_animation_with_path<F, ID, U, P, A>(
+    fn load_animation_with_path<'s, F, T>(
         &mut self,
-        id: ID,
+        id: T::FileId,
         dir_path: F, // アニメーションファイルのあるディレクトリパス指定
         progress: &mut ProgressCounter,
     ) where
-        ID: FileId + AnimationFile,
-        U: AnimationUser,
-        P: AnimationKey,
-        A: AnimationKey,
         F: Into<String>,
+        T: TranslateAnimation<'s>,
     {
         self.exec(
             |(mut store, loader, storage): (
-                Write<AnimationStore<ID, U, P, A>>,
+                Write<AnimationStore<T>>,
                 ReadExpect<Loader>,
-                Read<AssetStorage<data::AnimationData<U, P, A>>>,
+                Read<AssetStorage<data::AnimationData<T>>>,
             )| {
                 let dir_path = dir_path.into();
                 let path = format!("{}/animation/animation.anim.ron", dir_path);
@@ -42,22 +39,19 @@ impl AnimationLoad for &mut World {
     }
 
     // パス名を指定してロード
-    fn load_sprite_with_path<F, ID, U, P, A>(
+    fn load_sprite_with_path<'s, F, T>(
         &mut self,
-        id: ID,
+        id: T::FileId,
         dir_path: F,
         sprite_sheet_num: usize,
         progress: &mut ProgressCounter,
     ) where
-        ID: FileId + AnimationFile,
-        U: AnimationUser,
-        P: AnimationKey,
-        A: AnimationKey,
         F: Into<String>,
+        T: TranslateAnimation<'s>,
     {
         self.exec(
             |(mut store, loader, tex_storage, sprite_storage): (
-                Write<AnimationStore<ID, U, P, A>>,
+                Write<AnimationStore<T>>,
                 ReadExpect<Loader>,
                 Read<AssetStorage<Texture>>,
                 Read<AssetStorage<SpriteSheet>>,
@@ -94,65 +88,50 @@ impl AnimationLoad for &mut World {
 
 pub trait AnimationLoad {
     // パス名を指定してロード
-    fn load_animation_with_path<F, ID, U, P, A>(
+    fn load_animation_with_path<'s, F, T>(
         &mut self,
-        id: ID,
+        id: T::FileId,
         dir_path: F, // アニメーションファイルのあるディレクトリパス指定
         progress: &mut ProgressCounter,
     ) where
-        ID: FileId + AnimationFile,
-        U: AnimationUser,
         F: Into<String>,
-        P: AnimationKey,
-        A: AnimationKey;
+        T: TranslateAnimation<'s>;
 
     // パス名を指定してロード
-    fn load_sprite_with_path<F, ID, U, P, A>(
+    fn load_sprite_with_path<'s, F, T>(
         &mut self,
-        id: ID,
+        id: T::FileId,
         dir_path: F,
         sprite_sheet_num: usize,
         _progress: &mut ProgressCounter,
     ) where
-        ID: FileId + AnimationFile,
-        U: AnimationUser,
         F: Into<String>,
-        P: AnimationKey,
-        A: AnimationKey;
+        T: TranslateAnimation<'s>;
 
-    fn load_animation<ID, U, P, A>(&mut self, id: ID, progress: &mut ProgressCounter)
+    fn load_animation<'s, T>(&mut self, id: T::FileId, progress: &mut ProgressCounter)
     where
-        ID: FileId + AnimationFile,
-        U: AnimationUser,
-        P: AnimationKey,
-        A: AnimationKey,
+        T: TranslateAnimation<'s>,
     {
-        let file_name = id.to_file_name();
+        let file_name = T::to_file_name(&id);
         log::info!("load {}", file_name);
-        self.load_animation_with_path::<_, ID, U, P, A>(id, file_name, progress);
+        self.load_animation_with_path::<_, T>(id, file_name, progress);
     }
 
-    fn load_sprite_sheet<ID, U, P, A>(&mut self, id: ID, progress: &mut ProgressCounter)
+    fn load_sprite_sheet<'s, T>(&mut self, id: T::FileId, progress: &mut ProgressCounter)
     where
-        ID: FileId + AnimationFile,
-        U: AnimationUser,
-        P: AnimationKey,
-        A: AnimationKey,
+        T: TranslateAnimation<'s>,
     {
-        let file_name = id.to_file_name();
-        let num = id.sprite_sheet_num();
+        let file_name = T::to_file_name(&id);
+        let num = T::sprite_sheet_num(&id);
         log::info!("load {} of num {}", file_name, num);
-        self.load_sprite_with_path::<_, ID, U, P, A>(id, file_name, num, progress);
+        self.load_sprite_with_path::<_, T>(id, file_name, num, progress);
     }
 
-    fn load_animation_files<ID, U, P, A>(&mut self, id: ID, progress: &mut ProgressCounter)
+    fn load_animation_files<'s, T>(&mut self, id: T::FileId, progress: &mut ProgressCounter)
     where
-        ID: FileId + AnimationFile,
-        U: AnimationUser,
-        P: AnimationKey,
-        A: AnimationKey,
+        T: TranslateAnimation<'s>,
     {
-        self.load_animation::<ID, U, P, A>(id, progress);
-        self.load_sprite_sheet::<ID, U, P, A>(id, progress);
+        self.load_animation::<T>(id, progress);
+        self.load_sprite_sheet::<T>(id, progress);
     }
 }

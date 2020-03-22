@@ -1,4 +1,4 @@
-use super::pack::Pack;
+use crate::{resource::pack::Pack, traits::animation_file::AnimationFile};
 use amethyst::{
     assets::{Asset, Handle},
     ecs::DenseVecStorage,
@@ -9,30 +9,28 @@ use std::collections::BTreeMap;
 // アニメーションデータ
 // SpriteStudio のプロジェクトファイル一個に相当する
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AnimationData<U, P, A>
+pub struct AnimationData<T>
 where
-    P: Ord + std::hash::Hash + Serialize,
-    A: Ord + std::hash::Hash + Serialize,
+    T: AnimationFile,
 {
-    #[serde(bound(deserialize = "BTreeMap<P, Pack<U, A>>: Deserialize<'de>"))]
-    packs: BTreeMap<P, Pack<U, A>>,
+    #[serde(bound(
+        deserialize = "BTreeMap<T::PackKey, Pack<T::UserData, T::AnimationKey>>: Deserialize<'de>"
+    ))]
+    packs: BTreeMap<T::PackKey, Pack<T::UserData, T::AnimationKey>>,
 }
 
-impl<U, P, A> AnimationData<U, P, A>
+impl<T> AnimationData<T>
 where
-    P: Ord + std::hash::Hash + Serialize,
-    A: Ord + std::hash::Hash + Serialize,
+    T: AnimationFile,
 {
-    pub fn pack(&self, pack: &P) -> Option<&Pack<U, A>> {
+    pub fn pack(&self, pack: &T::PackKey) -> Option<&Pack<T::UserData, T::AnimationKey>> {
         self.packs.get(pack)
     }
 }
 
-impl<U, P, A> Asset for AnimationData<U, P, A>
+impl<T> Asset for AnimationData<T>
 where
-    U: 'static + Serialize + Sync + Send,
-    P: 'static + Sync + Send + Ord + std::hash::Hash + Serialize,
-    A: 'static + Sync + Send + Ord + std::hash::Hash + Serialize,
+    T: 'static + Send + Sync + AnimationFile,
 {
     const NAME: &'static str = "SPRITE_ANIMATION";
 
@@ -42,24 +40,22 @@ where
 
 //----------------------------------------------------
 // データ参照のみのためビルダーパターン
-pub struct AnimationDataBuilder<U, P, A>
+pub struct AnimationDataBuilder<T>
 where
-    P: Ord + std::hash::Hash + Serialize,
-    A: Ord + std::hash::Hash + Serialize,
+    T: AnimationFile,
 {
-    packs: BTreeMap<P, Pack<U, A>>,
+    packs: BTreeMap<T::PackKey, Pack<T::UserData, T::AnimationKey>>,
 }
 
-impl<U, P, A> AnimationDataBuilder<U, P, A>
+impl<T> AnimationDataBuilder<T>
 where
-    P: Ord + std::hash::Hash + Serialize,
-    A: Ord + std::hash::Hash + Serialize,
+    T: AnimationFile,
 {
-    pub fn new(packs: BTreeMap<P, Pack<U, A>>) -> Self {
+    pub fn new(packs: BTreeMap<T::PackKey, Pack<T::UserData, T::AnimationKey>>) -> Self {
         AnimationDataBuilder { packs }
     }
 
-    pub fn build(self) -> AnimationData<U, P, A> {
+    pub fn build(self) -> AnimationData<T> {
         AnimationData { packs: self.packs }
     }
 }

@@ -74,7 +74,7 @@ where
         world: &mut World,
         builder: &mut DispatcherBuilder<'a, 'b>,
     ) -> Result<(), Error> {
-        world.register::<PlayAnimationKey<T::FileId, T::PackKey, T::AnimationKey>>();
+        world.register::<PlayAnimationKey<T>>();
         builder.add(
             SpriteVisibilitySortingSystem::new(),
             "sprite_visibility_system",
@@ -194,12 +194,12 @@ where
         ) = <(
             Read<AssetStorage<SpriteSheet>>,
             Read<AssetStorage<Texture>>,
-            Read<AssetStorage<AnimationData<T::UserData, T::PackKey, T::AnimationKey>>>,
-            Read<AnimationStore<T::FileId, T::UserData, T::PackKey, T::AnimationKey>>,
+            Read<AssetStorage<AnimationData<T>>>,
+            Read<AnimationStore<T>>,
             ReadStorage<Transform>,
             ReadStorage<Tint>,
             ReadStorage<AnimationTime>,
-            ReadStorage<PlayAnimationKey<T::FileId, T::PackKey, T::AnimationKey>>,
+            ReadStorage<PlayAnimationKey<T>>,
         )>::fetch(world);
 
         self.env.process(factory, index, world);
@@ -401,10 +401,8 @@ fn build_animation<'s, B, T>(
     (id, &pack_id, &animation_id): (&T::FileId, &T::PackKey, &T::AnimationKey),
     current_time: f32,
     root_color: [f32; 4],
-    animation_store: &Read<AnimationStore<T::FileId, T::UserData, T::PackKey, T::AnimationKey>>,
-    sprite_animation_storage: &Read<
-        AssetStorage<AnimationData<T::UserData, T::PackKey, T::AnimationKey>>,
-    >,
+    animation_store: &Read<AnimationStore<T>>,
+    sprite_animation_storage: &Read<AssetStorage<AnimationData<T>>>,
     sprite_sheet_storage: &Read<AssetStorage<SpriteSheet>>,
     tex_storage: &Read<AssetStorage<Texture>>,
     root_matrix: Matrix4<f32>,

@@ -1,11 +1,7 @@
-use crate::traits::{AnimationKey, AnimationUser, FileId};
+use crate::traits::animation_file::AnimationFile;
 use amethyst::ecs::{Entity, SystemData};
 
-pub trait TranslateAnimation<'s>: 'static + Send + Sync {
-    type FileId: FileId;
-    type PackKey: AnimationKey;
-    type AnimationKey: AnimationKey;
-    type UserData: AnimationUser;
+pub trait TranslateAnimation<'s>: 'static + Send + Sync + AnimationFile {
     type OptionalData: SystemData<'s>;
 
     // アニメーション遷移

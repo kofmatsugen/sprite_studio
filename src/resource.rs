@@ -6,27 +6,22 @@ pub mod part;
 mod part_timeline;
 pub mod timeline;
 
-use crate::traits::{AnimationKey, AnimationUser, FileId};
+use crate::traits::animation_file::AnimationFile;
 use amethyst::{assets::Handle, renderer::sprite::SpriteSheetHandle};
 use std::collections::BTreeMap;
 
-pub type AnimationHandle<U, P, A> = Handle<data::AnimationData<U, P, A>>;
-pub struct AnimationStore<ID, U, P, A>
+pub type AnimationHandle<T> = Handle<data::AnimationData<T>>;
+pub struct AnimationStore<T>
 where
-    ID: FileId,
-    P: AnimationKey,
-    A: AnimationKey,
+    T: AnimationFile,
 {
-    pub(crate) animations: BTreeMap<ID, AnimationHandle<U, P, A>>,
-    pub(crate) sprite_sheets: BTreeMap<ID, Vec<SpriteSheetHandle>>,
+    pub(crate) animations: BTreeMap<T::FileId, AnimationHandle<T>>,
+    pub(crate) sprite_sheets: BTreeMap<T::FileId, Vec<SpriteSheetHandle>>,
 }
 
-impl<ID, U, P, A> Default for AnimationStore<ID, U, P, A>
+impl<T> Default for AnimationStore<T>
 where
-    ID: FileId,
-    U: AnimationUser,
-    P: AnimationKey,
-    A: AnimationKey,
+    T: AnimationFile,
 {
     fn default() -> Self {
         AnimationStore {
@@ -36,22 +31,19 @@ where
     }
 }
 
-impl<ID, U, P, A> AnimationStore<ID, U, P, A>
+impl<T> AnimationStore<T>
 where
-    ID: FileId,
-    U: AnimationUser,
-    P: AnimationKey,
-    A: AnimationKey,
+    T: AnimationFile,
 {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn get_animation_handle(&self, id: &ID) -> Option<&AnimationHandle<U, P, A>> {
+    pub fn get_animation_handle(&self, id: &T::FileId) -> Option<&AnimationHandle<T>> {
         self.animations.get(id)
     }
 
-    pub fn get_sprite_handle(&self, id: &ID, map_id: usize) -> Option<&SpriteSheetHandle> {
+    pub fn get_sprite_handle(&self, id: &T::FileId, map_id: usize) -> Option<&SpriteSheetHandle> {
         self.sprite_sheets
             .get(id)
             .and_then(|sprite_sheets| sprite_sheets.get(map_id))

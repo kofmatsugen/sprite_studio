@@ -1,13 +1,20 @@
+use crate::traits::animation_file::AnimationFile;
 use amethyst::ecs::{Component, FlaggedStorage};
 
-pub struct PlayAnimationKey<ID, P, A> {
-    file_id: ID,
-    pack_name: Option<P>,
-    animation_name: Option<A>,
+pub struct PlayAnimationKey<T>
+where
+    T: AnimationFile,
+{
+    file_id: T::FileId,
+    pack_name: Option<T::PackKey>,
+    animation_name: Option<T::AnimationKey>,
 }
 
-impl<ID, P, A> PlayAnimationKey<ID, P, A> {
-    pub fn new(file_id: ID) -> Self {
+impl<T> PlayAnimationKey<T>
+where
+    T: AnimationFile,
+{
+    pub fn new(file_id: T::FileId) -> Self {
         PlayAnimationKey {
             file_id,
             pack_name: None,
@@ -15,32 +22,30 @@ impl<ID, P, A> PlayAnimationKey<ID, P, A> {
         }
     }
 
-    pub fn set_pack(&mut self, pack_name: P) {
+    pub fn set_pack(&mut self, pack_name: T::PackKey) {
         self.pack_name = Some(pack_name);
     }
 
-    pub fn set_animation(&mut self, animation_name: A) {
+    pub fn set_animation(&mut self, animation_name: T::AnimationKey) {
         self.animation_name = Some(animation_name);
     }
 
-    pub fn file_id(&self) -> &ID {
+    pub fn file_id(&self) -> &T::FileId {
         &self.file_id
     }
 
-    pub fn pack_name(&self) -> Option<&P> {
+    pub fn pack_name(&self) -> Option<&T::PackKey> {
         self.pack_name.as_ref()
     }
 
-    pub fn animation_name(&self) -> Option<&A> {
+    pub fn animation_name(&self) -> Option<&T::AnimationKey> {
         self.animation_name.as_ref()
     }
 }
 
-impl<ID, P, A> Component for PlayAnimationKey<ID, P, A>
+impl<T> Component for PlayAnimationKey<T>
 where
-    ID: 'static + Send + Sync,
-    P: 'static + Send + Sync,
-    A: 'static + Send + Sync,
+    T: AnimationFile,
 {
     type Storage = FlaggedStorage<Self>;
 }

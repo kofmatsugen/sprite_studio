@@ -35,7 +35,7 @@ where
         builder: &mut DispatcherBuilder,
     ) -> Result<(), amethyst::Error> {
         builder.add(
-            Processor::<AnimationData<T::UserData, T::PackKey, T::AnimationKey>>::new(),
+            Processor::<AnimationData<T>>::new(),
             "sprite_animation_processor",
             &[],
         );

@@ -28,9 +28,9 @@ where
     type SystemData = (
         Entities<'s>,
         WriteStorage<'s, AnimationTime>,
-        WriteStorage<'s, PlayAnimationKey<T::FileId, T::PackKey, T::AnimationKey>>,
-        Read<'s, AssetStorage<AnimationData<T::UserData, T::PackKey, T::AnimationKey>>>,
-        Read<'s, AnimationStore<T::FileId, T::UserData, T::PackKey, T::AnimationKey>>,
+        WriteStorage<'s, PlayAnimationKey<T>>,
+        Read<'s, AssetStorage<AnimationData<T>>>,
+        Read<'s, AnimationStore<T>>,
         T::OptionalData,
     );
 
