@@ -50,11 +50,10 @@ where
         ): Self::SystemData,
     ) {
         for (e, time, key) in (&*entities, &mut animation_times, &mut play_key).join() {
-            let (id, pack_id, anim_id) =
-                match (key.file_id(), key.pack_name(), key.animation_name()) {
-                    (id, Some(pack), Some(anim)) => (id, pack, anim),
-                    _ => continue,
-                };
+            let (id, pack_id, anim_id) = match key.play_key() {
+                Some((id, pack, anim)) => (id, pack, anim),
+                None => continue,
+            };
             let current_time = time.current_time();
             let animation = animation_store
                 .get_animation_handle(id)

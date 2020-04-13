@@ -219,9 +219,9 @@ where
         {
             let current_time = current.current_time();
             let matrix = *transform.global_matrix();
-            let key = match (key.file_id(), key.pack_name(), key.animation_name()) {
-                (id, Some(pack), Some(anim)) => (id, pack, anim),
-                _ => continue,
+            let key = match key.play_key() {
+                Some((id, pack, anim)) => (id, pack, anim),
+                None => continue,
             };
             let color = tint
                 .map(|tint| {
