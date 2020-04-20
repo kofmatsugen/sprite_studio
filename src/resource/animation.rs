@@ -59,7 +59,7 @@ impl<U> Animation<U> {
         self.parts_timelines[part_id].user(frame)
     }
 
-    pub fn instance(&self, part_id: usize, frame: usize) -> Option<&InstanceKey> {
+    pub fn instance(&self, part_id: usize, frame: usize) -> Option<(usize, &InstanceKey)> {
         log::trace!("[instance] id: {}, frame: {}", part_id, frame);
         self.parts_timelines[part_id].instance(frame)
     }

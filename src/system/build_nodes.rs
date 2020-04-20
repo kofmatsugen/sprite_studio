@@ -1,7 +1,10 @@
 use crate::{
     components::{AnimationNodes, AnimationTime, Node, PlayAnimationKey},
-    resource::{data::AnimationData, name::AnimationName, AnimationStore},
+    resource::{
+        animation::Animation, data::AnimationData, name::AnimationName, pack::Pack, AnimationStore,
+    },
     traits::translate_animation::TranslateAnimation,
+    types::InstanceKey,
 };
 use amethyst::{
     assets::AssetStorage,
@@ -84,6 +87,7 @@ where
     }
 }
 
+// 実時間でノードを作成
 fn make_node<'s, T>(
     time: f32,
     key: Option<(&T::FileId, &T::PackKey, &T::AnimationKey)>,
@@ -104,8 +108,100 @@ where
 
     let frame = animation.sec_to_frame(time);
 
+    make_animation_nodes::<T>(
+        frame,
+        root_transform,
+        root_matrix,
+        root_color,
+        pack,
+        animation,
+        id,
+        store,
+        animation_storage,
+    )
+}
+
+// インスタンスパーツのノード作成
+fn make_instance_nodes<'s, T>(
+    key_set_frame: usize,
+    current_frame: usize,
+    instance: &InstanceKey,
+    key: Option<(&T::FileId, &T::PackKey, &T::AnimationKey)>,
+    root_transform: &Transform,
+    root_matrix: &Matrix4<f32>,
+    root_color: &[f32; 4],
+    store: &AnimationStore<T>,
+    animation_storage: &AssetStorage<AnimationData<T>>,
+) -> Option<AnimationNodes<T::UserData>>
+where
+    T: TranslateAnimation<'s>,
+{
+    let (id, pack_id, animation_id) = key?;
+
+    let handle = store.get_animation_handle(id)?;
+    let pack = animation_storage.get(handle)?.pack(pack_id)?;
+    let animation = pack.animation(animation_id)?;
+
+    // アニメーション情報からインスタンスの再生フレームを算出
+    // インスタンスキーには再生開始位置，終了位置が載っている
+    // 開始位置と実際の再生フレートの差がインスタンスパーツ上の再生位置
+    // この時点で再生速度を考慮する(f32 -> usize キャストは 0 方向へ丸められる)
+    let end_frame = animation.total_frame() - instance.end_offset();
+    let play_frame = (((current_frame - key_set_frame) as f32) * instance.speed_rate()) as usize;
+    // 1回の再生時間算出
+    let once_play_time = end_frame - instance.start_offset() + 1;
+    // 再生回数と，その再生フレーム値を算出
+    let played_loop_num = play_frame / once_play_time;
+    let mut current_play_frame = play_frame % once_play_time;
+    if let Some(loop_num) = instance.loop_num() {
+        if loop_num <= played_loop_num {
+            // 再生回数が指定回数を超えてるので終了
+            return None;
+        }
+    }
+
+    // 逆再生の場合か，pingpong再生の奇数ループ目は再生フレーム値が逆になる
+    if instance.reverse() == true || (played_loop_num % 2 == 1 && instance.pingpong() == true) {
+        current_play_frame = once_play_time - current_play_frame;
+    }
+
+    make_animation_nodes::<T>(
+        current_play_frame + instance.start_offset(),
+        root_transform,
+        root_matrix,
+        root_color,
+        pack,
+        animation,
+        id,
+        store,
+        animation_storage,
+    )
+}
+
+// アニメーション，パックデータからノード作成
+fn make_animation_nodes<'s, T>(
+    frame: usize,
+    root_transform: &Transform,
+    root_matrix: &Matrix4<f32>,
+    root_color: &[f32; 4],
+    pack: &Pack<T::UserData, T::PackKey, T::AnimationKey>,
+    animation: &Animation<T::UserData>,
+    // インスタンスノードに必要な情報
+    id: &T::FileId,
+    store: &AnimationStore<T>,
+    animation_storage: &AssetStorage<AnimationData<T>>,
+) -> Option<AnimationNodes<T::UserData>>
+where
+    T: TranslateAnimation<'s>,
+{
+    // 再生できないので総フレーム数よりあとの場合はノードを作らない
+    if frame >= animation.total_frame() {
+        return None;
+    }
+
     let mut nodes = AnimationNodes::new();
     for (part_id, part) in pack.parts().enumerate() {
+        // 親ノードの情報を取得,なければ Entity の情報
         let (parent_transform, parent_color, parent_hide, parent_matrix) = part
             .parent_id()
             .and_then(|p| nodes.node(p as usize))
@@ -140,15 +236,19 @@ where
             part.refference_animation_name(),
             animation.instance(part_id, frame),
         ) {
-            (Some(AnimationName::FullName { pack, animation }), Some(instance_key)) => {
+            (
+                Some(AnimationName::FullName { pack, animation }),
+                Some((instance_frame, instance_key)),
+            ) => {
                 if instance_key.independent() == false {
-                    log::info!("not independent instance:  {:?}/{:?}", pack, animation);
                     let root_transform = &part_transform;
                     let root_color = &part_color;
                     let root_matrix = &global_matrix;
-                    let time = 0.;
-                    make_node(
-                        time,
+
+                    make_instance_nodes(
+                        instance_frame, // キーフレームがセットされたフレーム
+                        frame,          // 親アニメーションの今のフレーム
+                        instance_key,   // インスタンスキー情報
                         Some((id, pack, animation)),
                         root_transform,
                         root_matrix,

@@ -22,6 +22,15 @@ impl<T> TimeLine<T> {
         self.key_frames.is_empty()
     }
 
+    // ステップのキーのあるフレーム数も一緒に取得
+    pub fn get_step_key_with_frame(&self, frame: usize) -> Option<(usize, &T)> {
+        self.key_frames
+            .iter()
+            .rev()
+            .find(|k| k.frame <= frame)
+            .map(|k| (k.frame, &k.value))
+    }
+
     // デシリアライズ時に存在しなければデフォルト値にするための関数
     // Default trait だと外部から生成できてしまうためcrate内関数
     pub(crate) fn default() -> Self {

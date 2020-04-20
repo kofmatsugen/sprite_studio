@@ -145,8 +145,8 @@ impl<U> PartTimeline<U> {
         self.user.get_step_key(frame)
     }
 
-    pub fn instance(&self, frame: usize) -> Option<&InstanceKey> {
-        self.instance.get_step_key(frame)
+    pub fn instance(&self, frame: usize) -> Option<(usize, &InstanceKey)> {
+        self.instance.get_step_key_with_frame(frame)
     }
 }
 
