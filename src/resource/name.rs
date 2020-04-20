@@ -1,19 +1,24 @@
+use crate::traits::AnimationKey;
 use serde::{Deserialize, Serialize};
 
 //----------------------------------------------------
 // アニメーション情報の取得キー
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "name")]
-pub enum AnimationName {
+#[serde(bound(deserialize = "Option<P>: Deserialize<'de>"))]
+pub enum AnimationName<P, A>
+where
+    P: AnimationKey,
+    A: AnimationKey,
+{
     FullName {
-        pack: String,
-        animation: String,
+        pack: P,
+        animation: A,
     },
-    PackName(String),
-    AnimName(String),
+    PackName(P),
+    AnimName(A),
     WithPartId {
         pack: String,
-        animation: String,
+        animation: A,
         part_id: u32,
     },
 }

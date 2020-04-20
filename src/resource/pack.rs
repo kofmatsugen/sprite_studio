@@ -1,22 +1,26 @@
 use super::{animation::Animation, part::Part};
+use crate::traits::AnimationKey;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Pack<U, A>
+pub struct Pack<U, P, A>
 where
-    A: Ord + std::hash::Hash + Serialize,
+    P: AnimationKey,
+    A: AnimationKey,
 {
-    parts: Vec<Part>,
+    #[serde(bound(deserialize = "Vec<Part<P, A>>: Deserialize<'de>"))]
+    parts: Vec<Part<P, A>>,
     #[serde(bound(deserialize = "BTreeMap<A, Animation<U>>: Deserialize<'de>"))]
     animations: BTreeMap<A, Animation<U>>,
 }
 
-impl<U, A> Pack<U, A>
+impl<U, P, A> Pack<U, P, A>
 where
-    A: Ord + std::hash::Hash + Serialize,
+    P: AnimationKey,
+    A: AnimationKey,
 {
-    pub fn parts(&self) -> impl Iterator<Item = &Part> {
+    pub fn parts(&self) -> impl Iterator<Item = &Part<P, A>> {
         self.parts.iter()
     }
 
@@ -25,23 +29,25 @@ where
     }
 }
 
-pub struct PackBuilder<U, A>
+pub struct PackBuilder<U, P, A>
 where
-    A: Ord + std::hash::Hash + Serialize,
+    P: AnimationKey,
+    A: AnimationKey,
 {
-    parts: Vec<Part>,
+    parts: Vec<Part<P, A>>,
     animations: BTreeMap<A, Animation<U>>,
 }
 
-impl<U, A> PackBuilder<U, A>
+impl<U, P, A> PackBuilder<U, P, A>
 where
-    A: Ord + std::hash::Hash + Serialize,
+    P: AnimationKey,
+    A: AnimationKey,
 {
-    pub fn new(parts: Vec<Part>, animations: BTreeMap<A, Animation<U>>) -> Self {
+    pub fn new(parts: Vec<Part<P, A>>, animations: BTreeMap<A, Animation<U>>) -> Self {
         PackBuilder { parts, animations }
     }
 
-    pub fn build(self) -> Pack<U, A> {
+    pub fn build(self) -> Pack<U, P, A> {
         Pack {
             parts: self.parts,
             animations: self.animations,

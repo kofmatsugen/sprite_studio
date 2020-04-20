@@ -1,19 +1,31 @@
 use super::name::AnimationName;
-use crate::types::{bound_type::Bounds, part_type::PartType};
+use crate::{
+    traits::AnimationKey,
+    types::{bound_type::Bounds, part_type::PartType},
+};
 use serde::{Deserialize, Serialize};
 
 //----------------------------------------------------
 // アニメーションのパーツ情報
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Part {
+pub struct Part<P, A>
+where
+    P: AnimationKey,
+    A: AnimationKey,
+{
     name: String,
     parent_id: Option<u32>,
-    refference_animation_name: Option<AnimationName>,
+    #[serde(bound(deserialize = "Option<AnimationName<P, A>>: Deserialize<'de>"))]
+    refference_animation_name: Option<AnimationName<P, A>>,
     part_type: PartType,
     bounds: Option<Bounds>,
 }
 
-impl Part {
+impl<P, A> Part<P, A>
+where
+    P: AnimationKey,
+    A: AnimationKey,
+{
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -22,22 +34,30 @@ impl Part {
         self.parent_id
     }
 
-    pub fn refference_animation_name(&self) -> Option<&AnimationName> {
+    pub fn refference_animation_name(&self) -> Option<&AnimationName<P, A>> {
         self.refference_animation_name.as_ref()
     }
 }
 
 //----------------------------------------------------
 // パーツの情報は取得のみしか許可しないためにビルダーパターン
-pub struct PartBuilder {
+pub struct PartBuilder<P, A>
+where
+    P: AnimationKey,
+    A: AnimationKey,
+{
     name: String,
     parent_id: Option<u32>,
-    refference_animation_name: Option<AnimationName>,
+    refference_animation_name: Option<AnimationName<P, A>>,
     part_type: PartType,
     bounds: Option<Bounds>,
 }
 
-impl PartBuilder {
+impl<P, A> PartBuilder<P, A>
+where
+    P: AnimationKey,
+    A: AnimationKey,
+{
     pub fn new<S: Into<String>>(name: S, part_type: PartType) -> Self {
         PartBuilder {
             name: name.into(),
@@ -52,14 +72,10 @@ impl PartBuilder {
         self.parent_id = Some(parent_id);
         self
     }
-    pub fn refference_animation_name<S: Into<String>>(
-        mut self,
-        pack_name: S,
-        anim_name: S,
-    ) -> Self {
+    pub fn refference_animation_name(mut self, pack_name: P, anim_name: A) -> Self {
         self.refference_animation_name = Some(AnimationName::FullName {
-            pack: pack_name.into(),
-            animation: anim_name.into(),
+            pack: pack_name,
+            animation: anim_name,
         });
         self
     }
@@ -69,7 +85,7 @@ impl PartBuilder {
         self
     }
 
-    pub fn build(self) -> Part {
+    pub fn build(self) -> Part<P, A> {
         Part {
             name: self.name,
             parent_id: self.parent_id,

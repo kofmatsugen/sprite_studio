@@ -14,16 +14,19 @@ where
     T: AnimationFile,
 {
     #[serde(bound(
-        deserialize = "BTreeMap<T::PackKey, Pack<T::UserData, T::AnimationKey>>: Deserialize<'de>"
+        deserialize = "BTreeMap<T::PackKey, Pack<T::UserData,T::PackKey, T::AnimationKey>>: Deserialize<'de>"
     ))]
-    packs: BTreeMap<T::PackKey, Pack<T::UserData, T::AnimationKey>>,
+    packs: BTreeMap<T::PackKey, Pack<T::UserData, T::PackKey, T::AnimationKey>>,
 }
 
 impl<T> AnimationData<T>
 where
     T: AnimationFile,
 {
-    pub fn pack(&self, pack: &T::PackKey) -> Option<&Pack<T::UserData, T::AnimationKey>> {
+    pub fn pack(
+        &self,
+        pack: &T::PackKey,
+    ) -> Option<&Pack<T::UserData, T::PackKey, T::AnimationKey>> {
         self.packs.get(pack)
     }
 }
@@ -44,14 +47,16 @@ pub struct AnimationDataBuilder<T>
 where
     T: AnimationFile,
 {
-    packs: BTreeMap<T::PackKey, Pack<T::UserData, T::AnimationKey>>,
+    packs: BTreeMap<T::PackKey, Pack<T::UserData, T::PackKey, T::AnimationKey>>,
 }
 
 impl<T> AnimationDataBuilder<T>
 where
     T: AnimationFile,
 {
-    pub fn new(packs: BTreeMap<T::PackKey, Pack<T::UserData, T::AnimationKey>>) -> Self {
+    pub fn new(
+        packs: BTreeMap<T::PackKey, Pack<T::UserData, T::PackKey, T::AnimationKey>>,
+    ) -> Self {
         AnimationDataBuilder { packs }
     }
 
