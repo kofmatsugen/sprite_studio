@@ -41,6 +41,7 @@ where
 
 //----------------------------------------------------
 // パーツの情報は取得のみしか許可しないためにビルダーパターン
+#[cfg(feature = "builder")]
 pub struct PartBuilder<P, A>
 where
     P: AnimationKey,
@@ -53,6 +54,7 @@ where
     bounds: Option<Bounds>,
 }
 
+#[cfg(feature = "builder")]
 impl<P, A> PartBuilder<P, A>
 where
     P: AnimationKey,

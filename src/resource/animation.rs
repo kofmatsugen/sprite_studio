@@ -1,5 +1,9 @@
-use super::part_timeline::{PartTimeline, PartTimelineBuilder};
-use crate::types::{cell::Cell, interpolate::Interpolation, InstanceKey, LinearColor};
+use super::part_timeline::PartTimeline;
+#[cfg(feature = "builder")]
+use super::part_timeline::PartTimelineBuilder;
+use crate::types::{cell::Cell, InstanceKey};
+#[cfg(feature = "builder")]
+use crate::types::{interpolate::Interpolation, LinearColor};
 use amethyst::{core::Transform, renderer::resources::Tint};
 use serde::{Deserialize, Serialize};
 
@@ -65,12 +69,14 @@ impl<U> Animation<U> {
     }
 }
 
+#[cfg(feature = "builder")]
 pub struct AnimationBuilder<U> {
     fps: usize,
     total_frame: usize,
     parts_timelines: Vec<PartTimelineBuilder<U>>,
 }
 
+#[cfg(feature = "builder")]
 impl<U> AnimationBuilder<U> {
     pub fn new(part_num: usize, total_frame: usize, fps: usize) -> Self {
         AnimationBuilder {

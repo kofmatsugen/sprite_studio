@@ -44,6 +44,7 @@ impl InstanceKey {
 }
 
 // インスタンスパーツ再生情報生成
+#[cfg(feature = "builder")]
 #[derive(Default, Clone, Debug)]
 pub struct InstanceKeyBuilder {
     infinity: Option<bool>,
@@ -56,6 +57,7 @@ pub struct InstanceKeyBuilder {
     pingpong: Option<bool>,    // 往復再生
 }
 
+#[cfg(feature = "builder")]
 impl InstanceKeyBuilder {
     pub fn new() -> Self {
         Default::default()

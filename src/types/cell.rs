@@ -16,11 +16,13 @@ impl Cell {
     }
 }
 
+#[cfg(feature = "builder")]
 pub struct CellBuilder {
     map_id: usize,
     cell_id: usize,
 }
 
+#[cfg(feature = "builder")]
 impl CellBuilder {
     pub fn new(map_id: usize, cell_id: usize) -> Self {
         CellBuilder { map_id, cell_id }

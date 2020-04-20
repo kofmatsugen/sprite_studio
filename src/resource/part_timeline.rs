@@ -1,5 +1,9 @@
-use super::timeline::{TimeLine, TimeLineBuilder};
-use crate::types::{cell::Cell, interpolate::Interpolation, InstanceKey, LinearColor};
+use super::timeline::TimeLine;
+#[cfg(feature = "builder")]
+use super::timeline::TimeLineBuilder;
+#[cfg(feature = "builder")]
+use crate::types::interpolate::Interpolation;
+use crate::types::{cell::Cell, InstanceKey, LinearColor};
 use amethyst::{
     core::{
         math::{Translation3, UnitQuaternion, Vector3},
@@ -150,6 +154,7 @@ impl<U> PartTimeline<U> {
     }
 }
 
+#[cfg(feature = "builder")]
 pub(crate) struct PartTimelineBuilder<U> {
     // 非表示
     hide: TimeLineBuilder<bool>,
@@ -178,6 +183,7 @@ pub(crate) struct PartTimelineBuilder<U> {
     instance: TimeLineBuilder<InstanceKey>,
 }
 
+#[cfg(feature = "builder")]
 impl<U> PartTimelineBuilder<U> {
     pub fn new() -> Self {
         PartTimelineBuilder {

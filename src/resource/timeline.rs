@@ -100,10 +100,12 @@ struct KeyFrame<T> {
     value: T,
 }
 
+#[cfg(feature = "builder")]
 pub struct TimeLineBuilder<T> {
     key_frames: Vec<KeyFrame<T>>,
 }
 
+#[cfg(feature = "builder")]
 impl<T> TimeLineBuilder<T> {
     pub fn new() -> Self {
         TimeLineBuilder { key_frames: vec![] }
