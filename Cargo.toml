@@ -17,5 +17,6 @@ num= "0.2.1"
 
 [features]
 default=[]
+debug=[]
 builder=["serialize"]
 serialize=[]
