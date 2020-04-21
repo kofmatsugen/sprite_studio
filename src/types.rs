@@ -1,6 +1,7 @@
 pub(crate) mod animation_instance;
 pub(crate) mod bound_type;
 pub mod cell;
+pub mod event;
 pub mod interpolate;
 pub(crate) mod linear_color;
 pub(crate) mod part_type;

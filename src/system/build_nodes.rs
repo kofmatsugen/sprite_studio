@@ -4,12 +4,15 @@ use crate::{
         animation::Animation, data::AnimationData, name::AnimationName, pack::Pack, AnimationStore,
     },
     traits::translate_animation::TranslateAnimation,
-    types::InstanceKey,
+    types::{
+        event::{AnimationEvent, AnimationEventChannel},
+        InstanceKey,
+    },
 };
 use amethyst::{
     assets::AssetStorage,
     core::{math::Matrix4, Transform},
-    ecs::{Entities, Join, Read, ReadStorage, System, WriteStorage},
+    ecs::{Entities, Entity, Join, Read, ReadStorage, System, Write, WriteStorage},
     renderer::resources::Tint,
 };
 use std::marker::PhantomData;
@@ -35,6 +38,7 @@ where
         ReadStorage<'s, PlayAnimationKey<T>>,
         ReadStorage<'s, Transform>,
         ReadStorage<'s, Tint>,
+        Write<'s, AnimationEventChannel<T>>,
         Read<'s, AssetStorage<AnimationData<T>>>,
         Read<'s, AnimationStore<T>>,
     );
@@ -48,6 +52,7 @@ where
             animation_keys,
             transforms,
             tints,
+            mut channel,
             animation_storage,
             animation_store,
         ): Self::SystemData,
@@ -76,6 +81,8 @@ where
                 &root_color,
                 &animation_store,
                 &animation_storage,
+                e,
+                &mut channel,
             ) {
                 // 生成したノードをセットする
                 match nodes.insert(e, node) {
@@ -96,6 +103,8 @@ fn make_node<'s, T>(
     root_color: &[f32; 4],
     store: &AnimationStore<T>,
     animation_storage: &AssetStorage<AnimationData<T>>,
+    entity: Entity,
+    channel: &mut AnimationEventChannel<T>,
 ) -> Option<AnimationNodes<T::UserData>>
 where
     T: TranslateAnimation<'s>,
@@ -107,6 +116,17 @@ where
     let animation = pack.animation(animation_id)?;
 
     let frame = animation.sec_to_frame(time);
+
+    if frame >= animation.total_frame() {
+        // エンティティに直接付随してるアニメーションが終わったのでイベントを登録
+        channel.single_write(AnimationEvent::End {
+            entity,
+            file_id: *id,
+            pack: *pack_id,
+            animation: *animation_id,
+        });
+        return None;
+    }
 
     make_animation_nodes::<T>(
         frame,
@@ -271,6 +291,7 @@ where
             parent_hide || animation.hide(part_id, frame),
         );
 
+        //-------------------------------------
         // ユーザーデータとはスプライトシートのハンドルをここでセット
         // ユーザーデータ
         if let Some(user) = animation.user(part_id, frame) {
