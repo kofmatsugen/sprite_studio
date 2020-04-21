@@ -6,14 +6,14 @@ use super::{
 use crate::{
     components::{AnimationTime, PlayAnimationKey},
     load::AnimationLoad,
-    resource::data::AnimationData,
+    resource::{data::AnimationData, AnimationStore},
     system::{AnimationTransitionSystem, BuildNodesSystem},
 };
 use amethyst::{
     assets::{Processor, ProgressCounter},
     core::transform::Transform,
     core::ArcThreadPool,
-    ecs::{Builder, Dispatcher, DispatcherBuilder, Entity, WorldExt},
+    ecs::{Builder, Dispatcher, DispatcherBuilder, Entity, WorldExt, Write},
     renderer::{camera::Camera, ActiveCamera},
     shred::World,
     window::ScreenDimensions,
@@ -68,8 +68,13 @@ where
         if let Some(dispatcher) = self.dispatcher.as_mut() {
             dispatcher.dispatch(&data.world);
         }
-
+        // 次ステートに移動するときはスプラッシュ画像を開放，エンティティも破棄
+        // data.world
+        //     .exec(|mut store: Write<AnimationStore<SplashTranslation>>| {
+        //         store.unload_file(&FileId::SpriteStudioSplash);
+        //     });
         // SimpleTrans::Switch(Box::new(T::default()))
+
         SimpleTrans::None
     }
 }

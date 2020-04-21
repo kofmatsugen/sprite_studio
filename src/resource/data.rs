@@ -41,8 +41,22 @@ where
     type HandleStorage = DenseVecStorage<Handle<Self>>;
 }
 
+#[cfg(feature = "debug")]
+impl<T> std::ops::Drop for AnimationData<T>
+where
+    T: AnimationFile,
+{
+    fn drop(&mut self) {
+        log::debug!(
+            "drop AnimationData: {:?}",
+            self.packs.keys().collect::<Vec<_>>()
+        );
+    }
+}
+
 //----------------------------------------------------
 // データ参照のみのためビルダーパターン
+#[cfg(feature = "builder")]
 pub struct AnimationDataBuilder<T>
 where
     T: AnimationFile,
@@ -50,6 +64,7 @@ where
     packs: BTreeMap<T::PackKey, Pack<T::UserData, T::PackKey, T::AnimationKey>>,
 }
 
+#[cfg(feature = "builder")]
 impl<T> AnimationDataBuilder<T>
 where
     T: AnimationFile,

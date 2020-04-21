@@ -29,6 +29,7 @@ where
     }
 }
 
+#[cfg(feature = "builder")]
 pub struct PackBuilder<U, P, A>
 where
     P: AnimationKey,
@@ -38,6 +39,7 @@ where
     animations: BTreeMap<A, Animation<U>>,
 }
 
+#[cfg(feature = "builder")]
 impl<U, P, A> PackBuilder<U, P, A>
 where
     P: AnimationKey,
@@ -52,5 +54,19 @@ where
             parts: self.parts,
             animations: self.animations,
         }
+    }
+}
+
+#[cfg(feature = "debug")]
+impl<U, P, A> std::ops::Drop for Pack<U, P, A>
+where
+    P: AnimationKey,
+    A: AnimationKey,
+{
+    fn drop(&mut self) {
+        log::debug!(
+            "drop Pack: {:?}",
+            self.parts().map(|p| p.name()).collect::<Vec<_>>()
+        );
     }
 }

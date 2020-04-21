@@ -31,6 +31,16 @@ where
     }
 }
 
+#[cfg(feature = "debug")]
+impl<T> std::ops::Drop for AnimationStore<T>
+where
+    T: AnimationFile,
+{
+    fn drop(&mut self) {
+        log::debug!("drop Animation Store");
+    }
+}
+
 impl<T> AnimationStore<T>
 where
     T: AnimationFile,
@@ -50,8 +60,19 @@ where
     }
 
     // ステートの終わりなどで開放したい場合はここで
-    pub fn unload_file(&mut self, id: &T::FileId) {
-        self.animations.remove(id);
-        self.sprite_sheets.remove(id);
+    // 別でハンドルを参照しているエンティティがあれば破棄はできない
+    pub fn unload_file(
+        &mut self,
+        id: &T::FileId,
+    ) -> Option<(AnimationHandle<T>, Vec<SpriteSheetHandle>)> {
+        let removed_animations = self.animations.remove(id)?;
+        let removed_sheets = self.sprite_sheets.remove(id)?;
+        log::info!(
+            "unload animation: {:?}: {:?}, {:?}",
+            id,
+            removed_animations,
+            removed_sheets
+        );
+        Some((removed_animations, removed_sheets))
     }
 }
