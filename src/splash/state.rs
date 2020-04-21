@@ -95,7 +95,6 @@ where
                 });
 
         if end_splash == true {
-            log::error!("end splash");
             // 次ステートに移動するときはスプラッシュ画像を開放，エンティティも破棄
             let _ = data.world.delete_entity(self.splash_entity.unwrap());
             let _ = data.world.delete_entity(self.camera_entity.unwrap());
@@ -103,6 +102,8 @@ where
                 .exec(|mut store: Write<AnimationStore<SplashTranslation>>| {
                     store.unload_file(&FileId::SpriteStudioSplash);
                 });
+            let dispatcher = self.dispatcher.take();
+            dispatcher.map(|d| d.dispose(data.world));
             SimpleTrans::Switch(Box::new(T::default()))
         } else {
             SimpleTrans::None

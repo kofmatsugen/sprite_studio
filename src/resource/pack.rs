@@ -65,8 +65,12 @@ where
 {
     fn drop(&mut self) {
         log::debug!(
-            "drop Pack: {:?}",
+            "drop Parts: {:?}",
             self.parts().map(|p| p.name()).collect::<Vec<_>>()
+        );
+        log::debug!(
+            "drop Animation: {:?}",
+            self.animations.keys().collect::<Vec<_>>()
         );
     }
 }
