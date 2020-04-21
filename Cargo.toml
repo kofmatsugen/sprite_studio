@@ -17,4 +17,5 @@ num= "0.2.1"
 
 [features]
 default=[]
-builder=[]
+builder=["serialize"]
+serialize=[]

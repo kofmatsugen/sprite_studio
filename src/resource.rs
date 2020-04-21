@@ -48,4 +48,10 @@ where
             .get(id)
             .and_then(|sprite_sheets| sprite_sheets.get(map_id))
     }
+
+    // ステートの終わりなどで開放したい場合はここで
+    pub fn unload_file(&mut self, id: &T::FileId) {
+        self.animations.remove(id);
+        self.sprite_sheets.remove(id);
+    }
 }

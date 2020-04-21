@@ -4,6 +4,7 @@ pub mod load;
 pub mod renderer;
 pub mod resource;
 pub(crate) mod shaders;
+pub mod splash;
 pub mod system;
 pub mod traits;
 pub mod types;

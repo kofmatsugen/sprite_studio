@@ -24,7 +24,6 @@ use amethyst::{
             shader::Shader,
         },
         sprite::SpriteSheet,
-        sprite_visibility::SpriteVisibilitySortingSystem,
         submodules::{DynamicVertexBuffer, FlatEnvironmentSub, TextureId, TextureSub},
         types::{Backend, Texture},
         util::simple_shader_set,
@@ -63,13 +62,8 @@ where
     fn on_build<'a, 'b>(
         &mut self,
         _world: &mut World,
-        builder: &mut DispatcherBuilder<'a, 'b>,
+        _builder: &mut DispatcherBuilder<'a, 'b>,
     ) -> Result<(), Error> {
-        builder.add(
-            SpriteVisibilitySortingSystem::new(),
-            "sprite_visibility_system",
-            &[],
-        );
         Ok(())
     }
 
