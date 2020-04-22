@@ -86,7 +86,13 @@ where
             ) {
                 // 生成したノードをセットする
                 match nodes.insert(e, node) {
-                    Ok(_) => {}
+                    Ok(_) => {
+                        log::trace!(
+                            "node root position = ({:.3}, {:.3})",
+                            transform.translation().x,
+                            transform.translation().y,
+                        );
+                    }
                     Err(err) => log::error!("{:?}", err),
                 }
             }
