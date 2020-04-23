@@ -3,7 +3,7 @@ use super::timeline::TimeLine;
 use super::timeline::TimeLineBuilder;
 #[cfg(feature = "builder")]
 use crate::types::interpolate::Interpolation;
-use crate::types::{cell::Cell, InstanceKey, LinearColor};
+use crate::types::{cell::Cell, InstanceKey, LinearColor, VertexKey};
 use amethyst::{
     core::{
         math::{Translation3, UnitQuaternion, Vector3},
@@ -96,6 +96,13 @@ pub struct PartTimeline<U> {
         skip_serializing_if = "TimeLine::is_empty"
     )]
     instance: TimeLine<InstanceKey>,
+
+    // アニメーションインスタンス
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
+    vertex: TimeLine<VertexKey>,
 }
 
 impl<U> PartTimeline<U> {
@@ -152,6 +159,10 @@ impl<U> PartTimeline<U> {
     pub fn instance(&self, frame: usize) -> Option<(usize, &InstanceKey)> {
         self.instance.get_step_key_with_frame(frame)
     }
+
+    pub fn vertex(&self, frame: usize) -> Option<VertexKey> {
+        self.vertex.get_interpolation_key(frame)
+    }
 }
 
 #[cfg(feature = "builder")]
@@ -181,6 +192,9 @@ pub(crate) struct PartTimelineBuilder<U> {
 
     // アニメーションインスタンス
     instance: TimeLineBuilder<InstanceKey>,
+
+    // 頂点アニメーションキー
+    vertex: TimeLineBuilder<VertexKey>,
 }
 
 #[cfg(feature = "builder")]
@@ -208,6 +222,8 @@ impl<U> PartTimelineBuilder<U> {
             user: TimeLineBuilder::new(),
             // アニメーションインスタンス
             instance: TimeLineBuilder::new(),
+            // 頂点アニメーションキー
+            vertex: TimeLineBuilder::new(),
         }
     }
 
@@ -268,6 +284,11 @@ impl<U> PartTimelineBuilder<U> {
         self.instance.add_key(frame, interpolation, instance);
     }
 
+    // 頂点アニメーションキー
+    pub fn add_vertex(&mut self, frame: usize, interpolation: Interpolation, vertex: VertexKey) {
+        self.vertex.add_key(frame, interpolation, vertex);
+    }
+
     pub fn build(self) -> PartTimeline<U> {
         PartTimeline {
             // 表示ON/OFF
@@ -291,6 +312,8 @@ impl<U> PartTimelineBuilder<U> {
             user: self.user.build(),
             // アニメーションインスタンス
             instance: self.instance.build(),
+            // 頂点アニメーションキー
+            vertex: self.vertex.build(),
         }
     }
 }
