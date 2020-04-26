@@ -3,7 +3,7 @@ use super::timeline::TimeLine;
 use super::timeline::TimeLineBuilder;
 #[cfg(feature = "builder")]
 use crate::types::interpolate::Interpolation;
-use crate::types::{cell::Cell, InstanceKey, LinearColor, VertexKey};
+use crate::types::{cell::Cell, EffectKey, InstanceKey, LinearColor, VertexKey};
 use amethyst::{
     core::{
         math::{Translation3, UnitQuaternion, Vector3},
@@ -97,12 +97,19 @@ pub struct PartTimeline<U> {
     )]
     instance: TimeLine<InstanceKey>,
 
-    // アニメーションインスタンス
+    // 頂点アニメーションキー
     #[serde(
         default = "TimeLine::default",
         skip_serializing_if = "TimeLine::is_empty"
     )]
     vertex: TimeLine<VertexKey>,
+
+    // エフェクト再生キー
+    #[serde(
+        default = "TimeLine::default",
+        skip_serializing_if = "TimeLine::is_empty"
+    )]
+    effect: TimeLine<EffectKey>,
 }
 
 impl<U> PartTimeline<U> {
@@ -163,6 +170,10 @@ impl<U> PartTimeline<U> {
     pub fn vertex(&self, frame: usize) -> Option<VertexKey> {
         self.vertex.get_interpolation_key(frame)
     }
+
+    pub fn effect(&self, frame: usize) -> Option<&EffectKey> {
+        self.effect.get_step_key(frame)
+    }
 }
 
 #[cfg(feature = "builder")]
@@ -195,6 +206,9 @@ pub(crate) struct PartTimelineBuilder<U> {
 
     // 頂点アニメーションキー
     vertex: TimeLineBuilder<VertexKey>,
+
+    // エフェクト再生キー
+    effect: TimeLineBuilder<EffectKey>,
 }
 
 #[cfg(feature = "builder")]
@@ -224,6 +238,8 @@ impl<U> PartTimelineBuilder<U> {
             instance: TimeLineBuilder::new(),
             // 頂点アニメーションキー
             vertex: TimeLineBuilder::new(),
+            // エフェクト再生キー
+            effect: TimeLineBuilder::new(),
         }
     }
 
@@ -289,6 +305,11 @@ impl<U> PartTimelineBuilder<U> {
         self.vertex.add_key(frame, interpolation, vertex);
     }
 
+    // エフェクト再生キー
+    pub fn add_effect(&mut self, frame: usize, interpolation: Interpolation, effect: EffectKey) {
+        self.effect.add_key(frame, interpolation, effect);
+    }
+
     pub fn build(self) -> PartTimeline<U> {
         PartTimeline {
             // 表示ON/OFF
@@ -314,6 +335,8 @@ impl<U> PartTimelineBuilder<U> {
             instance: self.instance.build(),
             // 頂点アニメーションキー
             vertex: self.vertex.build(),
+            // エフェクト再生キー
+            effect: self.effect.build(),
         }
     }
 }

@@ -1,7 +1,7 @@
 use super::part_timeline::PartTimeline;
 #[cfg(feature = "builder")]
 use super::part_timeline::PartTimelineBuilder;
-use crate::types::{cell::Cell, InstanceKey, VertexKey};
+use crate::types::{cell::Cell, EffectKey, InstanceKey, VertexKey};
 #[cfg(feature = "builder")]
 use crate::types::{interpolate::Interpolation, LinearColor};
 use amethyst::{core::Transform, renderer::resources::Tint};
@@ -70,6 +70,10 @@ impl<U> Animation<U> {
 
     pub fn vertex(&self, part_id: usize, frame: usize) -> Option<VertexKey> {
         self.parts_timelines[part_id].vertex(frame)
+    }
+
+    pub fn effect(&self, part_id: usize, frame: usize) -> Option<&EffectKey> {
+        self.parts_timelines[part_id].effect(frame)
     }
 }
 
@@ -235,6 +239,16 @@ impl<U> AnimationBuilder<U> {
         vertex: VertexKey,
     ) {
         self.parts_timelines[part_id].add_vertex(frame, interpolation, vertex);
+    }
+
+    pub fn add_effect(
+        &mut self,
+        part_id: usize,
+        frame: usize,
+        interpolation: Interpolation,
+        effect: EffectKey,
+    ) {
+        self.parts_timelines[part_id].add_effect(frame, interpolation, effect);
     }
 
     pub fn build(self) -> Animation<U> {

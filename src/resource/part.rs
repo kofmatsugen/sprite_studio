@@ -14,10 +14,17 @@ where
     A: AnimationKey,
 {
     name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     parent_id: Option<u32>,
-    #[serde(bound(deserialize = "Option<AnimationName<P, A>>: Deserialize<'de>"))]
+    #[serde(
+        bound(deserialize = "Option<AnimationName<P, A>>: Deserialize<'de>"),
+        skip_serializing_if = "Option::is_none"
+    )]
     refference_animation_name: Option<AnimationName<P, A>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    refference_effect_index: Option<usize>,
     part_type: PartType,
+    #[serde(skip_serializing_if = "Option::is_none")]
     bounds: Option<Bounds>,
 }
 
@@ -50,6 +57,7 @@ where
     name: String,
     parent_id: Option<u32>,
     refference_animation_name: Option<AnimationName<P, A>>,
+    refference_effect_index: Option<usize>,
     part_type: PartType,
     bounds: Option<Bounds>,
 }
@@ -65,6 +73,7 @@ where
             name: name.into(),
             parent_id: None,
             refference_animation_name: None,
+            refference_effect_index: None,
             part_type,
             bounds: None,
         }
@@ -74,11 +83,17 @@ where
         self.parent_id = Some(parent_id);
         self
     }
+
     pub fn refference_animation_name(mut self, pack_name: P, anim_name: A) -> Self {
         self.refference_animation_name = Some(AnimationName::FullName {
             pack: pack_name,
             animation: anim_name,
         });
+        self
+    }
+
+    pub fn refference_effect_index(mut self, index: usize) -> Self {
+        self.refference_effect_index = Some(index);
         self
     }
 
@@ -92,6 +107,7 @@ where
             name: self.name,
             parent_id: self.parent_id,
             refference_animation_name: self.refference_animation_name,
+            refference_effect_index: self.refference_effect_index,
             part_type: self.part_type,
             bounds: self.bounds,
         }
