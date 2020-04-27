@@ -29,7 +29,7 @@ impl AnimationLoad for &mut World {
                 Read<AssetStorage<data::AnimationData<T>>>,
             )| {
                 let dir_path = dir_path.into();
-                let path = format!("{}/animation/animation.anim.ron", dir_path);
+                let path = format!("sprite_studio/{}/animation/animation.anim.ron", dir_path);
                 log::info!("load animation: {:?}", path);
                 let handle = loader.load(path, RonFormat, progress, &storage);
 
@@ -59,8 +59,10 @@ impl AnimationLoad for &mut World {
                 let dir_path = dir_path.into();
                 let mut sheets = vec![];
                 for i in 0..sprite_sheet_num {
-                    let sprite_path = format!("{}/image/sprite{:03}.png", dir_path, i);
-                    let sheet_path = format!("{}/sheet/sprite{:03}.sheet.ron", dir_path, i);
+                    let sprite_path =
+                        format!("sprite_studio/{}/image/sprite{:03}.png", dir_path, i);
+                    let sheet_path =
+                        format!("sprite_studio/{}/sheet/sprite{:03}.sheet.ron", dir_path, i);
 
                     log::info!("load sprite: {:?}", sprite_path);
                     log::info!("load sheet: {:?}", sheet_path);
