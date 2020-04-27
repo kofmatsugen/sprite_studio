@@ -259,7 +259,6 @@ fn build_sprite_pipeline<B: Backend>(
     let shader_fragment = unsafe { crate::shaders::SPRITE_FRAGMENT.module(factory).unwrap() };
 
     // パイプライン生成．
-    // todo: これの意味を調べる．vulkan のドキュメントが使える？
     let pipes = PipelinesBuilder::new()
         .with_pipeline(
             PipelineDescBuilder::new()
