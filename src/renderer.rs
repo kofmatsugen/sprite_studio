@@ -5,7 +5,7 @@ use crate::{
 use amethyst::{
     assets::{AssetStorage, Handle},
     core::math::{Matrix4, Vector4},
-    ecs::{DispatcherBuilder, Join, Read, ReadStorage, SystemData, World},
+    ecs::{Join, Read, ReadStorage, SystemData, World},
     error::Error,
     renderer::{
         batch::{GroupIterator, OneLevelBatch},
@@ -59,14 +59,6 @@ where
     B: Backend,
     T: TranslateAnimation<'s> + std::fmt::Debug,
 {
-    fn on_build<'a, 'b>(
-        &mut self,
-        _world: &mut World,
-        _builder: &mut DispatcherBuilder<'a, 'b>,
-    ) -> Result<(), Error> {
-        Ok(())
-    }
-
     fn on_plan(
         &mut self,
         plan: &mut RenderPlan<B>,
@@ -179,7 +171,14 @@ where
 
         sprites_ref.clear_inner();
 
-        for (nodes,) in (&nodes,).join() {
+        let mut joined = (&nodes,).join().collect::<Vec<_>>();
+        joined.sort_by(|(nodes1,), (nodes2,)| {
+            let z1 = nodes1.nodes().nth(0).unwrap().transform.translation().z;
+            let z2 = nodes2.nodes().nth(0).unwrap().transform.translation().z;
+            z1.partial_cmp(&z2).unwrap()
+        });
+
+        for (nodes,) in joined {
             build_animation::<B, T>(
                 nodes,
                 &sprite_sheet_storage,
@@ -254,7 +253,6 @@ fn build_sprite_pipeline<B: Backend>(
     }?;
 
     // AmethystのDrawFlat2Dのシェーダーを流用．
-    // todo: SpirVのコンパイル方法を調べる必要あり
     let shader_vertex = unsafe { crate::shaders::SPRITE_VERTEX.module(factory).unwrap() };
     let shader_fragment = unsafe { crate::shaders::SPRITE_FRAGMENT.module(factory).unwrap() };
 

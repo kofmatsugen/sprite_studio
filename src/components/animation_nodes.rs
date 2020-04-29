@@ -18,6 +18,22 @@ impl<T> AnimationNodes<T> {
         }
     }
 
+    pub(crate) fn sort_by_z(&mut self) {
+        self.nodes.sort_by(|node1, node2| {
+            let z1 = node1.transform.translation().z;
+            let z2 = node2.transform.translation().z;
+            z1.partial_cmp(&z2).unwrap()
+        });
+        for instance in self.instance_nodes.iter_mut() {
+            instance.sort_by_z();
+        }
+        self.instance_nodes.sort_by(|instance1, instance2| {
+            let z1 = instance1.nodes[0].transform.translation().z;
+            let z2 = instance2.nodes[0].transform.translation().z;
+            z1.partial_cmp(&z2).unwrap()
+        });
+    }
+
     pub(crate) fn push(&mut self, node: Node<T>) {
         self.nodes.push(node);
     }

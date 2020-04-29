@@ -13,6 +13,8 @@ where
     parts: Vec<Part<P, A>>,
     #[serde(bound(deserialize = "BTreeMap<A, Animation<U>>: Deserialize<'de>"))]
     animations: BTreeMap<A, Animation<U>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    setup: Option<Animation<U>>, // 各パーツのセットアップ情報
 }
 
 impl<U, P, A> Pack<U, P, A>
@@ -27,6 +29,10 @@ where
     pub fn animation(&self, animation: &A) -> Option<&Animation<U>> {
         self.animations.get(animation)
     }
+
+    pub fn setup_info(&self) -> Option<&Animation<U>> {
+        self.setup.as_ref()
+    }
 }
 
 #[cfg(feature = "builder")]
@@ -37,6 +43,7 @@ where
 {
     parts: Vec<Part<P, A>>,
     animations: BTreeMap<A, Animation<U>>,
+    setup: Option<Animation<U>>, // 各パーツのセットアップ情報
 }
 
 #[cfg(feature = "builder")]
@@ -45,14 +52,23 @@ where
     P: AnimationKey,
     A: AnimationKey,
 {
-    pub fn new(parts: Vec<Part<P, A>>, animations: BTreeMap<A, Animation<U>>) -> Self {
-        PackBuilder { parts, animations }
+    pub fn new(
+        parts: Vec<Part<P, A>>,
+        animations: BTreeMap<A, Animation<U>>,
+        setup: Option<Animation<U>>,
+    ) -> Self {
+        PackBuilder {
+            parts,
+            animations,
+            setup,
+        }
     }
 
     pub fn build(self) -> Pack<U, P, A> {
         Pack {
             parts: self.parts,
             animations: self.animations,
+            setup: self.setup,
         }
     }
 }

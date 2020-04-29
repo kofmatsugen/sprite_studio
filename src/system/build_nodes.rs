@@ -115,6 +115,7 @@ fn make_node<'s, T>(
 where
     T: TranslateAnimation<'s>,
 {
+    log::debug!("make node start: {:?}", key?);
     let (id, pack_id, animation_id) = key?;
 
     let handle = store.get_animation_handle(id)?;
@@ -225,8 +226,11 @@ where
         return None;
     }
 
+    log::trace!("make node: {} F", frame);
+
     let mut nodes = AnimationNodes::new();
     for (part_id, part) in pack.parts().enumerate() {
+        log::trace!("\tmake node: part = {}", part_id);
         // 親ノードの情報を取得,なければ Entity の情報
         let (parent_transform, parent_color, parent_hide, parent_matrix) = part
             .parent_id()
@@ -246,6 +250,7 @@ where
         let mut part_transform = parent_transform.clone();
         let local_transform = animation.local_transform(part_id, frame);
         part_transform.concat(&local_transform);
+        part_transform.translation_mut().z = local_transform.translation().z;
 
         // 描画用座標のマトリクス計算
         let global_matrix = parent_matrix * local_transform.matrix();
@@ -305,12 +310,17 @@ where
         }
 
         // スプライトシート
-        if let Some((handle, sprite_no)) = animation.cell(part_id, frame).and_then(|cell| {
-            let map_id = cell.map_id();
-            let cell_id = cell.cell_id();
-            let handle = store.get_sprite_handle(id, map_id)?;
-            Some((handle.clone(), cell_id))
-        }) {
+        if let Some((handle, sprite_no)) = animation
+            .cell(part_id, frame)
+            .or(pack.setup_info().and_then(|setup| setup.cell(part_id, 0))) // セルがセットアップ上にあるかもしれない
+            .and_then(|cell| {
+                let map_id = cell.map_id();
+                let cell_id = cell.cell_id();
+                let handle = store.get_sprite_handle(id, map_id)?;
+                Some((handle.clone(), cell_id))
+            })
+        {
+            log::trace!("\tmake sprite: {:?}, {}", handle, sprite_no);
             node.set_sprite_info(handle, sprite_no);
         }
 
@@ -319,8 +329,9 @@ where
             nodes.add_instance(instance);
         }
 
+        log::trace!("\tmake end: part = {}", part_id);
         nodes.push(node);
     }
-
+    nodes.sort_by_z();
     Some(nodes)
 }

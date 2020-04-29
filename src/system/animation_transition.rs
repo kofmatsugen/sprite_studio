@@ -55,12 +55,18 @@ where
                 None => continue,
             };
             let current_time = time.current_time();
-            let animation = animation_store
+            let animation = match animation_store
                 .get_animation_handle(id)
                 .and_then(|handle| sprite_animation_storage.get(handle))
                 .and_then(|data| data.pack(pack_id))
                 .and_then(|pack| pack.animation(anim_id))
-                .unwrap();
+            {
+                Some(animation) => animation,
+                None => {
+                    log::error!("animation not found: {:?}", (id, pack_id, anim_id));
+                    continue;
+                }
+            };
 
             // ステート変化に関連する情報はルートにのみ入れる
             let frame = animation.sec_to_frame(current_time);

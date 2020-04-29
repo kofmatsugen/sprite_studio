@@ -13,4 +13,5 @@ pub enum PartType {
     Joint,
     Armature,
     Effect,
+    Mask,
 }
