@@ -250,7 +250,8 @@ where
         let mut part_transform = parent_transform.clone();
         let local_transform = animation.local_transform(part_id, frame);
         part_transform.concat(&local_transform);
-        part_transform.translation_mut().z = local_transform.translation().z;
+        part_transform.translation_mut().z =
+            local_transform.translation().z + root_transform.translation().z;
 
         // 描画用座標のマトリクス計算
         let global_matrix = parent_matrix * local_transform.matrix();
@@ -322,6 +323,15 @@ where
         {
             log::trace!("\tmake sprite: {:?}, {}", handle, sprite_no);
             node.set_sprite_info(handle, sprite_no);
+        }
+
+        if let Some(deforms) = animation.vertex(part_id, frame) {
+            node.set_deform(
+                [deforms.lt().0, deforms.lt().1],
+                [deforms.lb().0, deforms.lb().1],
+                [deforms.rt().0, deforms.rt().1],
+                [deforms.rb().0, deforms.rb().1],
+            );
         }
 
         // インスタンス追加

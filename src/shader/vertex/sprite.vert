@@ -7,13 +7,11 @@ layout(std140, set = 0, binding = 0) uniform ViewArgs {
 };
 
 // Quad transform.
-layout(location = 0) in vec2 dir_x;
-layout(location = 1) in vec2 dir_y;
-layout(location = 2) in vec2 pos;
-layout(location = 3) in vec2 u_offset;
-layout(location = 4) in vec2 v_offset;
-layout(location = 5) in float depth;
-layout(location = 6) in vec4 color;
+layout(location = 0) in vec2 u_offset;
+layout(location = 1) in vec2 v_offset;
+layout(location = 2) in float depth;
+layout(location = 3) in vec4 color;
+layout(location = 4) in vec2 sprite_vertex[4];
 
 layout(location = 0) out VertexData {
     vec2 tex_uv;
@@ -38,7 +36,6 @@ void main() {
 
     vertex.tex_uv = texture_coords(vec2(tex_u, tex_v), u_offset, v_offset);
     vertex.color = color;
-    vec2 final_pos = pos + tex_u * dir_x + tex_v * dir_y;
-    vec4 vertex = vec4(final_pos, depth, 1.0);
+    vec4 vertex = vec4(sprite_vertex[gl_VertexIndex], depth, 1.0);
     gl_Position = proj_view * vertex;
 }

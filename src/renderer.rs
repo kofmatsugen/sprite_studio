@@ -1,3 +1,7 @@
+mod sprite_args;
+
+use sprite_args::SpriteArgs;
+
 use crate::{
     components::{AnimationNodes, Node},
     traits::translate_animation::TranslateAnimation,
@@ -11,7 +15,7 @@ use amethyst::{
         batch::{GroupIterator, OneLevelBatch},
         bundle::{RenderOrder, RenderPlan, RenderPlugin, Target},
         pipeline::{PipelineDescBuilder, PipelinesBuilder},
-        pod::{IntoPod, SpriteArgs},
+        pod::IntoPod,
         rendy::{
             command::{QueueId, RenderPassEncoder},
             factory::Factory,
@@ -306,6 +310,7 @@ fn from_global_matrix_data<'a>(
     sprite_no: usize,
     global_matrix: &Matrix4<f32>,
     tint: [f32; 4],
+    deform_offsets: &[[f32; 2]; 4],
 ) -> Option<(SpriteArgs, &'a Handle<Texture>)> {
     let sprite_sheet = sprite_storage.get(&sprite_sheet)?;
     if !tex_storage.contains(&sprite_sheet.texture) {
@@ -315,25 +320,40 @@ fn from_global_matrix_data<'a>(
     let sprite = &sprite_sheet.sprites[sprite_no];
 
     let transform = global_matrix;
-    let dir_x = transform.column(0) * sprite.width;
-    let dir_y = transform.column(1) * -sprite.height;
     let pos = transform * Vector4::new(-sprite.offsets[0], -sprite.offsets[1], 0.0, 1.0);
 
+    let mut deforms = [
+        [0.0; 2].into(), // right bottom
+        [0.0; 2].into(), // left bottom
+        [0.0; 2].into(), //
+        [0.0; 2].into(),
+    ];
+    for (i, deform) in deform_offsets.iter().enumerate() {
+        let left = if i % 2 == 0 { 0.5 } else { -0.5 };
+        let top = if i / 2 == 0 { 0.5 } else { -0.5 };
+        deforms[i] = (transform
+            * Vector4::new(
+                -sprite.offsets[0] + left * sprite.width + deform[0],
+                -sprite.offsets[1] + top * sprite.height + deform[1],
+                0.0,
+                1.0,
+            ))
+        .xy()
+        .into_pod();
+    }
+
     log::debug!("\tmatrix: {:?}", transform);
-    log::debug!("\t\tpos  : {:?}", pos.xy());
-    log::debug!("\t\tdir_x: {:?}", dir_x.xy());
-    log::debug!("\t\tdir_y: {:?}", dir_y.xy());
     log::debug!("\t\tcolor: {:?}", tint);
+    log::debug!("\t\tdeform offset: {:?}", deform_offsets);
+    log::debug!("\t\tdeforms: {:?}", deforms);
 
     Some((
         SpriteArgs {
-            dir_x: dir_x.xy().into_pod(),
-            dir_y: dir_y.xy().into_pod(),
-            pos: pos.xy().into_pod(),
             u_offset: [sprite.tex_coords.left, sprite.tex_coords.right].into(),
             v_offset: [sprite.tex_coords.top, sprite.tex_coords.bottom].into(),
             depth: pos.z,
             tint: tint.into(),
+            deforms,
         },
         &sprite_sheet.texture,
     ))
@@ -358,6 +378,7 @@ where
              color,
              sprite_sheet,
              sprite_no,
+             deform_offsets,
              ..
          }| {
             if *hide == true {
@@ -373,6 +394,7 @@ where
                 sprite_no,
                 global_matrix,
                 *color,
+                deform_offsets,
             )
             .and_then(|(batch_data, texture)| {
                 let (tex_id, _) = textures_ref.insert(

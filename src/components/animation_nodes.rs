@@ -70,6 +70,7 @@ pub struct Node<T> {
     pub sprite_sheet: Option<SpriteSheetHandle>, // 描画用スプライトシートハンドル
     pub sprite_no: Option<usize>,
     pub color: [f32; 4],
+    pub deform_offsets: [[f32; 2]; 4],
 }
 
 impl<T> Node<T> {
@@ -87,6 +88,7 @@ impl<T> Node<T> {
             sprite_sheet: None,
             sprite_no: None,
             color,
+            deform_offsets: [[0.; 2]; 4],
         }
     }
 
@@ -97,5 +99,9 @@ impl<T> Node<T> {
     pub(crate) fn set_sprite_info(&mut self, sprite_sheet: SpriteSheetHandle, sprite_no: usize) {
         self.sprite_sheet = sprite_sheet.into();
         self.sprite_no = sprite_no.into();
+    }
+
+    pub(crate) fn set_deform(&mut self, lt: [f32; 2], lb: [f32; 2], rt: [f32; 2], rb: [f32; 2]) {
+        self.deform_offsets = [rt, lt, rb, lb];
     }
 }
