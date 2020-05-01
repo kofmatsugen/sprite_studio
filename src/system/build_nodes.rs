@@ -67,6 +67,10 @@ where
         )
             .join()
         {
+            let current_time = match time {
+                AnimationTime::Play { current_time, .. } => *current_time,
+                AnimationTime::Stop { stopped_time, .. } => *stopped_time,
+            };
             let root_color = tint
                 .map(|tint| {
                     let (r, g, b, a) = tint.0.into_components();
@@ -74,7 +78,7 @@ where
                 })
                 .unwrap_or([1.0; 4]);
             if let Some(node) = make_node(
-                time.current_time(),
+                current_time,
                 key.play_key(),
                 transform,
                 transform.global_matrix(),

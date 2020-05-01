@@ -50,11 +50,14 @@ where
         ): Self::SystemData,
     ) {
         for (e, time, key) in (&*entities, &mut animation_times, &mut play_key).join() {
+            let current_time = match time {
+                AnimationTime::Play { current_time, .. } => *current_time,
+                AnimationTime::Stop { stopped_time, .. } => *stopped_time,
+            };
             let (id, pack_id, anim_id) = match key.play_key() {
                 Some((id, pack, anim)) => (id, pack, anim),
                 None => continue,
             };
-            let current_time = time.current_time();
             let animation = match animation_store
                 .get_animation_handle(id)
                 .and_then(|handle| sprite_animation_storage.get(handle))
@@ -77,7 +80,7 @@ where
                 Some((next_pack, next_anim, next_frame)) => {
                     let fps = animation.fps();
                     let next_time = 1.0 / (fps as f32) * (next_frame as f32);
-                    time.set_time(next_time);
+                    time.set_play_time(next_time);
                     key.set_pack(next_pack);
                     key.set_animation(next_anim);
                 }

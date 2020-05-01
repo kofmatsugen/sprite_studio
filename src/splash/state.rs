@@ -130,7 +130,8 @@ fn create_splash(world: &mut World) -> Entity {
     anim_key.set_pack(PackKey::SpriteStudioSplash);
     anim_key.set_animation(AnimationKey::SplashInOut);
     let mut anim_time = AnimationTime::new();
-    anim_time.set_speed(1.0);
+    anim_time.play(None);
+    anim_time.set_play_speed(1.0);
 
     world
         .create_entity()
