@@ -30,6 +30,13 @@ where
         self.animation_name = Some(animation_name);
     }
 
+    pub fn play_key(&self) -> Option<(&T::FileId, &T::PackKey, &T::AnimationKey)> {
+        let file_id = self.file_id();
+        let pack_name = self.pack_name()?;
+        let animation_name = self.animation_name()?;
+        Some((file_id, pack_name, animation_name))
+    }
+
     fn file_id(&self) -> &T::FileId {
         &self.file_id
     }
@@ -40,13 +47,6 @@ where
 
     fn animation_name(&self) -> Option<&T::AnimationKey> {
         self.animation_name.as_ref()
-    }
-
-    pub fn play_key(&self) -> Option<(&T::FileId, &T::PackKey, &T::AnimationKey)> {
-        let file_id = self.file_id();
-        let pack_name = self.pack_name()?;
-        let animation_name = self.animation_name()?;
-        Some((file_id, pack_name, animation_name))
     }
 }
 

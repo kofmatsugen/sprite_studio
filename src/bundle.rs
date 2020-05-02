@@ -1,6 +1,9 @@
 use crate::{
     resource::data::AnimationData,
-    system::{AnimationTimeIncrementSystem, AnimationTransitionSystem, BuildNodesSystem},
+    system::{
+        AnimationTimeIncrementSystem, AnimationTransitionSystem, BuildNodesSystem,
+        KeyChangeEventSystem,
+    },
     traits::translate_animation::TranslateAnimation,
 };
 
@@ -44,14 +47,22 @@ where
             "animation_time_increment",
             &[],
         );
+
         builder.add(
             AnimationTransitionSystem::<T>::new(),
             "animation_translate",
             &["animation_time_increment"],
         );
+
         builder.add(
             BuildNodesSystem::<T>::new(),
             "build_animation_node",
+            &["animation_translate"],
+        );
+
+        builder.add(
+            KeyChangeEventSystem::<T>::new(),
+            "key_change_event",
             &["animation_translate"],
         );
         Ok(())

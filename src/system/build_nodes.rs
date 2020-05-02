@@ -128,6 +128,16 @@ where
 
     let frame = animation.sec_to_frame(time);
 
+    if frame == 0 {
+        // アニメーション開始したと思われるので開始イベント
+        channel.single_write(AnimationEvent::Start {
+            entity,
+            file_id: *id,
+            pack: *pack_id,
+            animation: *animation_id,
+        });
+    }
+
     if frame >= animation.total_frame() {
         // エンティティに直接付随してるアニメーションが終わったのでイベントを登録
         channel.single_write(AnimationEvent::End {
