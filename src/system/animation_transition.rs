@@ -79,7 +79,7 @@ where
             match T::translate_animation(e, rest_time, (&pack_id, &anim_id), root_user, &optional) {
                 Some((next_pack, next_anim, next_frame)) => {
                     let fps = animation.fps();
-                    let next_time = 1.0 / (fps as f32) * (next_frame as f32) - rest_time;
+                    let next_time = 1.0 / (fps as f32) * (next_frame as f32);
                     time.set_play_time(next_time);
                     if let Some(key) = play_key.get_mut(e) {
                         key.set_pack(next_pack);
