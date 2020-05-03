@@ -5,17 +5,23 @@ use amethyst::{
 };
 use smallvec::SmallVec;
 pub struct AnimationNodes<T> {
+    play_frame: usize,
     nodes: SmallVec<[Node<T>; 32]>,
     instance_nodes: Vec<AnimationNodes<T>>,
 }
 
 impl<T> AnimationNodes<T> {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(play_frame: usize) -> Self {
         let nodes = SmallVec::new();
         AnimationNodes {
+            play_frame,
             nodes,
             instance_nodes: Vec::with_capacity(4),
         }
+    }
+
+    pub fn play_frame(&self) -> usize {
+        self.play_frame
     }
 
     pub(crate) fn sort_by_z(&mut self) {

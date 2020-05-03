@@ -242,7 +242,7 @@ where
 
     log::trace!("make node: {} F", frame);
 
-    let mut nodes = AnimationNodes::new();
+    let mut nodes = AnimationNodes::new(frame);
     for (part_id, part) in pack.parts().enumerate() {
         log::trace!("\tmake node: part = {}", part_id);
         // 親ノードの情報を取得,なければ Entity の情報
