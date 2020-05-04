@@ -48,11 +48,15 @@ where
             &[],
         );
 
+        builder.add_barrier();
+
         builder.add(
             AnimationTransitionSystem::<T>::new(),
             "animation_translate",
             &["animation_time_increment"],
         );
+
+        builder.add_barrier();
 
         builder.add(
             BuildNodesSystem::<T>::new(),

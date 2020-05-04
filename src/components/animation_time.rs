@@ -84,7 +84,7 @@ impl AnimationTime {
     }
 
     // 再生中なら加算，停止中なら停止時間を減算
-    pub fn add_time(&mut self, delta: f32) {
+    pub(crate) fn add_time(&mut self, delta: f32) {
         let mut stop_end_time = None;
         match self {
             AnimationTime::Play {
