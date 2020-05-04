@@ -6,6 +6,7 @@ use amethyst::{
 use smallvec::SmallVec;
 pub struct AnimationNodes<T> {
     play_frame: usize,
+    root_translation: (f32, f32), // ルートの移動速度
     nodes: SmallVec<[Node<T>; 32]>,
     instance_nodes: Vec<AnimationNodes<T>>,
 }
@@ -14,6 +15,7 @@ impl<T> AnimationNodes<T> {
     pub(crate) fn new(play_frame: usize) -> Self {
         let nodes = SmallVec::new();
         AnimationNodes {
+            root_translation: (0., 0.),
             play_frame,
             nodes,
             instance_nodes: Vec::with_capacity(4),
@@ -22,6 +24,14 @@ impl<T> AnimationNodes<T> {
 
     pub fn play_frame(&self) -> usize {
         self.play_frame
+    }
+
+    pub(crate) fn set_root_translate(&mut self, x: f32, y: f32) {
+        self.root_translation = (x, y);
+    }
+
+    pub(crate) fn root_translate(&self) -> (f32, f32) {
+        self.root_translation
     }
 
     pub(crate) fn sort_by_z(&mut self) {

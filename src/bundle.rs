@@ -2,7 +2,7 @@ use crate::{
     resource::data::AnimationData,
     system::{
         AnimationTimeIncrementSystem, AnimationTransitionSystem, BuildNodesSystem,
-        KeyChangeEventSystem,
+        KeyChangeEventSystem, RootTranslateSystem,
     },
     traits::translate_animation::TranslateAnimation,
 };
@@ -69,6 +69,15 @@ where
             "key_change_event",
             &["animation_translate"],
         );
+
+        builder.add_barrier();
+
+        builder.add(
+            RootTranslateSystem::<T>::new(),
+            "root_translate",
+            &["build_animation_node"],
+        );
+
         Ok(())
     }
 }

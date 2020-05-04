@@ -67,9 +67,13 @@ where
         )
             .join()
         {
-            let current_time = match time {
-                AnimationTime::Play { current_time, .. } => *current_time,
-                AnimationTime::Stop { stopped_time, .. } => *stopped_time,
+            let (current_time, prev_time) = match time {
+                AnimationTime::Play {
+                    current_time,
+                    prev_time,
+                    ..
+                } => (*current_time, *prev_time),
+                AnimationTime::Stop { stopped_time, .. } => (*stopped_time, *stopped_time),
             };
             let root_color = tint
                 .map(|tint| {
@@ -79,6 +83,7 @@ where
                 .unwrap_or([1.0; 4]);
             if let Some(node) = make_node(
                 current_time,
+                prev_time,
                 key.play_key(),
                 transform,
                 transform.global_matrix(),
@@ -106,7 +111,8 @@ where
 
 // 実時間でノードを作成
 fn make_node<'s, T>(
-    time: f32,
+    current_time: f32,
+    prev_time: f32,
     key: Option<(&T::FileId, &T::PackKey, &T::AnimationKey)>,
     root_transform: &Transform,
     root_matrix: &Matrix4<f32>,
@@ -126,9 +132,10 @@ where
     let pack = animation_storage.get(handle)?.pack(pack_id)?;
     let animation = pack.animation(animation_id)?;
 
-    let frame = animation.sec_to_frame(time);
+    let current_frame = animation.sec_to_frame(current_time);
+    let prev_frame = animation.sec_to_frame(prev_time);
 
-    if frame == 0 {
+    if current_frame == 0 {
         // アニメーション開始したと思われるので開始イベント
         channel.single_write(AnimationEvent::Start {
             entity,
@@ -138,7 +145,7 @@ where
         });
     }
 
-    if frame >= animation.total_frame() {
+    if current_frame >= animation.total_frame() {
         // エンティティに直接付随してるアニメーションが終わったのでイベントを登録
         channel.single_write(AnimationEvent::End {
             entity,
@@ -150,7 +157,8 @@ where
     }
 
     make_animation_nodes::<T>(
-        frame,
+        current_frame,
+        prev_frame,
         root_transform,
         root_matrix,
         root_color,
@@ -208,6 +216,7 @@ where
 
     make_animation_nodes::<T>(
         current_play_frame + instance.start_offset(),
+        current_play_frame + instance.start_offset(),
         root_transform,
         root_matrix,
         root_color,
@@ -221,7 +230,8 @@ where
 
 // アニメーション，パックデータからノード作成
 fn make_animation_nodes<'s, T>(
-    frame: usize,
+    current_frame: usize,
+    prev_frame: usize,
     root_transform: &Transform,
     root_matrix: &Matrix4<f32>,
     root_color: &[f32; 4],
@@ -236,13 +246,13 @@ where
     T: TranslateAnimation<'s>,
 {
     // 再生できないので総フレーム数よりあとの場合はノードを作らない
-    if frame >= animation.total_frame() {
+    if current_frame >= animation.total_frame() {
         return None;
     }
 
-    log::trace!("make node: {} F", frame);
+    log::trace!("make node: {} F", current_frame);
 
-    let mut nodes = AnimationNodes::new(frame);
+    let mut nodes = AnimationNodes::new(current_frame);
     for (part_id, part) in pack.parts().enumerate() {
         log::trace!("\tmake node: part = {}", part_id);
         // 親ノードの情報を取得,なければ Entity の情報
@@ -256,13 +266,27 @@ where
                      hide,
                      global_matrix,
                      ..
-                 }| (transform, color, *hide, global_matrix),
+                 }| (transform.clone(), *color, *hide, *global_matrix),
             )
-            .unwrap_or((root_transform, root_color, false, root_matrix));
+            .unwrap_or((root_transform.clone(), *root_color, false, *root_matrix));
 
         // パーツ座標のグローバル化
         let mut part_transform = parent_transform.clone();
-        let local_transform = animation.local_transform(part_id, frame);
+        let mut local_transform = animation.local_transform(part_id, current_frame);
+
+        // ルートの移動値は後で足すのでここではゼロとする
+        if part_id == crate::constant::ROOT_PART_ID {
+            let prev_transform = animation.local_transform(part_id, prev_frame);
+            let current_translation = local_transform.translation();
+
+            nodes.set_root_translate(
+                current_translation.x - prev_transform.translation().x,
+                current_translation.y - prev_transform.translation().y,
+            );
+
+            local_transform.set_translation_xyz(0., 0., 0.);
+        }
+
         part_transform.concat(&local_transform);
         part_transform.translation_mut().z =
             local_transform.translation().z + root_transform.translation().z;
@@ -271,7 +295,10 @@ where
         let global_matrix = parent_matrix * local_transform.matrix();
 
         // パーツカラーのグローバル化
-        let (r, g, b, a) = animation.local_color(part_id, frame).0.into_components();
+        let (r, g, b, a) = animation
+            .local_color(part_id, current_frame)
+            .0
+            .into_components();
         let mut part_color = [r, g, b, a];
         for (i, c) in parent_color.iter().enumerate() {
             part_color[i] *= c;
@@ -280,7 +307,7 @@ where
         // 独立再生じゃないインスタンスパーツだった場合，このパーツの下にノードを追加する
         let instance_node = match (
             part.refference_animation_name(),
-            animation.instance(part_id, frame),
+            animation.instance(part_id, current_frame),
         ) {
             (
                 Some(AnimationName::FullName { pack, animation }),
@@ -293,7 +320,7 @@ where
 
                     make_instance_nodes(
                         instance_frame, // キーフレームがセットされたフレーム
-                        frame,          // 親アニメーションの今のフレーム
+                        current_frame,  // 親アニメーションの今のフレーム
                         instance_key,   // インスタンスキー情報
                         Some((id, pack, animation)),
                         root_transform,
@@ -314,19 +341,19 @@ where
             part_transform,
             global_matrix,
             part_color,
-            parent_hide || animation.hide(part_id, frame),
+            parent_hide || animation.hide(part_id, current_frame),
         );
 
         //-------------------------------------
         // ユーザーデータとはスプライトシートのハンドルをここでセット
         // ユーザーデータ
-        if let Some(user) = animation.user(part_id, frame) {
+        if let Some(user) = animation.user(part_id, current_frame) {
             node.set_user(*user);
         }
 
         // スプライトシート
         if let Some((handle, sprite_no)) = animation
-            .cell(part_id, frame)
+            .cell(part_id, current_frame)
             .or(pack.setup_info().and_then(|setup| setup.cell(part_id, 0))) // セルがセットアップ上にあるかもしれない
             .and_then(|cell| {
                 let map_id = cell.map_id();
@@ -339,7 +366,7 @@ where
             node.set_sprite_info(handle, sprite_no);
         }
 
-        if let Some(deforms) = animation.vertex(part_id, frame) {
+        if let Some(deforms) = animation.vertex(part_id, current_frame) {
             node.set_deform(
                 [deforms.lt().0, deforms.lt().1],
                 [deforms.lb().0, deforms.lb().1],
