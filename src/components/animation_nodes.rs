@@ -30,7 +30,7 @@ impl<T> AnimationNodes<T> {
         self.root_translation = (x, y);
     }
 
-    pub(crate) fn root_translate(&self) -> (f32, f32) {
+    pub fn root_translate(&self) -> (f32, f32) {
         self.root_translation
     }
 
