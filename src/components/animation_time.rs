@@ -4,7 +4,7 @@ use amethyst::ecs::{Component, DenseVecStorage};
 pub enum AnimationTime {
     Play {
         current_time: f32,
-        prev_time: f32,
+        prev_time: Option<f32>,
         play_speed: f32,
     },
     Stop {
@@ -30,7 +30,7 @@ impl AnimationTime {
         };
         *self = AnimationTime::Play {
             current_time: time,
-            prev_time: time,
+            prev_time: None,
             play_speed: speed.into().unwrap_or(1.),
         }
     }
@@ -77,7 +77,7 @@ impl AnimationTime {
         } = self
         {
             *current_time = time;
-            *prev_time = time;
+            *prev_time = None;
         } else {
             log::warn!("play time set failed: {:?}", self);
         }
@@ -93,7 +93,7 @@ impl AnimationTime {
                 play_speed,
             } => {
                 // 通常再生は速度を考慮
-                *prev_time = *current_time;
+                *prev_time = Some(*current_time);
                 *current_time += delta * *play_speed;
             }
             AnimationTime::Stop {
@@ -115,7 +115,7 @@ impl AnimationTime {
             log::debug!("end stop: start from {}", current_time);
             *self = AnimationTime::Play {
                 current_time,
-                prev_time: current_time,
+                prev_time: Some(current_time),
                 play_speed,
             };
         }
@@ -129,7 +129,7 @@ impl AnimationTime {
                 current_time,
                 ..
             } => {
-                *prev_time = *current_time;
+                *prev_time = Some(*current_time);
                 *current_time += delta_sec;
             }
             AnimationTime::Stop {

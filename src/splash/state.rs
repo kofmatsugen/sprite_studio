@@ -7,7 +7,7 @@ use crate::{
     components::{AnimationTime, PlayAnimationKey},
     load::AnimationLoad,
     resource::{data::AnimationData, AnimationStore},
-    system::{AnimationTransitionSystem, BuildNodesSystem},
+    system::AnimationTransitionSystem,
     types::event::{AnimationEvent, AnimationEventChannel},
 };
 use amethyst::{
@@ -174,11 +174,6 @@ fn setup_dispatcher<'a, 'b>(world: &mut World) -> Dispatcher<'a, 'b> {
     builder.add(
         AnimationTransitionSystem::<SplashTranslation>::new(),
         "splash_translation",
-        &[],
-    );
-    builder.add(
-        BuildNodesSystem::<SplashTranslation>::new(),
-        "splash_build",
         &[],
     );
 

@@ -2,10 +2,11 @@ use crate::{
     components::{AnimationTime, PlayAnimationKey},
     resource::{data::AnimationData, AnimationStore},
     traits::translate_animation::TranslateAnimation,
+    types::event::{AnimationEvent, AnimationEventChannel},
 };
 use amethyst::{
     assets::AssetStorage,
-    ecs::{Entities, Join, Read, System, SystemData, World, WriteStorage},
+    ecs::{Entities, Join, Read, System, Write, WriteStorage},
 };
 use std::marker::PhantomData;
 
@@ -31,12 +32,9 @@ where
         WriteStorage<'s, PlayAnimationKey<T>>,
         Read<'s, AssetStorage<AnimationData<T>>>,
         Read<'s, AnimationStore<T>>,
+        Write<'s, AnimationEventChannel<T>>,
         T::OptionalData,
     );
-
-    fn setup(&mut self, world: &mut World) {
-        Self::SystemData::setup(world);
-    }
 
     fn run(
         &mut self,
@@ -46,6 +44,7 @@ where
             mut play_key,
             sprite_animation_storage,
             animation_store,
+            mut channel,
             optional,
         ): Self::SystemData,
     ) {
@@ -84,9 +83,36 @@ where
                     if let Some(key) = play_key.get_mut(e) {
                         key.set_pack(next_pack);
                         key.set_animation(next_anim);
+
+                        // 切り替わったので今再生中のアニメーションは終了
+                        channel.single_write(AnimationEvent::End {
+                            entity: e,
+                            file_id: id,
+                            pack: pack_id,
+                            animation: anim_id,
+                        });
+
+                        // アニメーションキー変更
+                        channel.single_write(AnimationEvent::ChangeKey {
+                            entity: e,
+                            file_id: id,
+                            pack: next_pack,
+                            animation: next_anim,
+                        });
+                    }
+                    log::error!("frame: {}, rest_time: {}", frame, rest_time);
+                }
+                None => {
+                    if rest_time > 0. {
+                        // 再生時間を超えてたらイベント通知
+                        channel.single_write(AnimationEvent::End {
+                            entity: e,
+                            file_id: id,
+                            pack: pack_id,
+                            animation: anim_id,
+                        });
                     }
                 }
-                None => {}
             }
         }
     }

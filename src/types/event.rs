@@ -8,23 +8,15 @@ pub enum AnimationEvent<T>
 where
     T: AnimationFile,
 {
-    // 再生時間がアニメーション再生の最初のフレームの場合に呼ばれる
-    // 実測のfpsとアニメーションfps が一致しない場合二度以上呼ばれる可能性がある
-    Start {
-        entity: Entity,
-        file_id: T::FileId,
-        pack: T::PackKey,
-        animation: T::AnimationKey,
-    },
-    // 再生時間がアニメーション再生時間を超えていた場合に呼ばれる
-    // 実測のfpsとアニメーションfps が一致しない場合二度以上呼ばれる可能性がある
+    // アニメーション再生が終わったときにそのキーを通知
+    // 別アニメーション再生時も呼び出される
     End {
         entity: Entity,
         file_id: T::FileId,
         pack: T::PackKey,
         animation: T::AnimationKey,
     },
-    // アニメーションのキーが変更されたとき
+    // アニメーションのキーが変更されたときに変更先キーを通知
     ChangeKey {
         entity: Entity,
         file_id: T::FileId,

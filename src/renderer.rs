@@ -3,13 +3,13 @@ mod sprite_args;
 use sprite_args::SpriteArgs;
 
 use crate::{
-    components::{AnimationNodes, Node},
+    components::{AnimationNodes, BuildRequireData, Node},
     traits::translate_animation::TranslateAnimation,
 };
 use amethyst::{
     assets::{AssetStorage, Handle},
     core::math::{Matrix4, Vector4},
-    ecs::{Join, Read, ReadStorage, SystemData, World},
+    ecs::{Join, Read, SystemData, World},
     error::Error,
     renderer::{
         batch::{GroupIterator, OneLevelBatch},
@@ -162,11 +162,12 @@ where
         _subpass: Subpass<B>,
         world: &World,
     ) -> PrepareResult {
-        let (sprite_sheet_storage, tex_storage, nodes) = <(
-            Read<AssetStorage<SpriteSheet>>,
-            Read<AssetStorage<Texture>>,
-            ReadStorage<AnimationNodes<T::UserData>>,
-        )>::fetch(world);
+        let (sprite_sheet_storage, tex_storage, (time, key, transforms, tint, storage, store)) =
+            <(
+                Read<AssetStorage<SpriteSheet>>,
+                Read<AssetStorage<Texture>>,
+                BuildRequireData<T>,
+            )>::fetch(world);
 
         self.env.process(factory, index, world);
 
@@ -175,16 +176,30 @@ where
 
         sprites_ref.clear_inner();
 
-        let mut joined = (&nodes,).join().collect::<Vec<_>>();
-        joined.sort_by(|(nodes1,), (nodes2,)| {
+        let mut nodes = (&time, &key, &transforms, tint.maybe())
+            .join()
+            .filter_map(|(time, key, transform, tint)| {
+                AnimationNodes::<T::UserData>::make_node::<T>(
+                    time,
+                    tint,
+                    key.play_key(),
+                    transform,
+                    transform.global_matrix(),
+                    &store,
+                    &storage,
+                )
+            })
+            .collect::<Vec<_>>();
+
+        nodes.sort_by(|nodes1, nodes2| {
             let z1 = nodes1.nodes().nth(0).unwrap().transform.translation().z;
             let z2 = nodes2.nodes().nth(0).unwrap().transform.translation().z;
             z1.partial_cmp(&z2).unwrap()
         });
 
-        for (nodes,) in joined {
+        for nodes in nodes {
             build_animation::<B, T>(
-                nodes,
+                &nodes,
                 &sprite_sheet_storage,
                 &tex_storage,
                 &factory,
