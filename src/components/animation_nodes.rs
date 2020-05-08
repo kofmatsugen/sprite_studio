@@ -207,19 +207,18 @@ impl<'s, U> AnimationNodes<U> {
         for (part_id, part) in pack.parts().enumerate() {
             log::trace!("\tmake node: part = {}", part_id);
             // 親ノードの情報を取得,なければ Entity の情報
-            let (parent_transform, parent_color, parent_hide, parent_matrix) = part
+            let (parent_transform, parent_hide, parent_matrix) = part
                 .parent_id()
                 .and_then(|p| nodes.node(p as usize))
                 .map(
                     |Node {
                          transform,
-                         color,
                          hide,
                          global_matrix,
                          ..
-                     }| (transform.clone(), *color, *hide, *global_matrix),
+                     }| (transform.clone(), *hide, *global_matrix),
                 )
-                .unwrap_or((root_transform.clone(), *root_color, false, *root_matrix));
+                .unwrap_or((root_transform.clone(), false, *root_matrix));
 
             // パーツ座標のグローバル化
             let mut part_transform = parent_transform.clone();
@@ -243,7 +242,7 @@ impl<'s, U> AnimationNodes<U> {
                 .0
                 .into_components();
             let mut part_color = [r, g, b, a];
-            for (i, c) in parent_color.iter().enumerate() {
+            for (i, c) in root_color.iter().enumerate() {
                 part_color[i] *= c;
             }
 
