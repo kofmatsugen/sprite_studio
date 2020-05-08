@@ -94,10 +94,6 @@ impl<'s, U> AnimationNodes<U> {
     where
         T: AnimationFile,
     {
-        let current_time = match time {
-            AnimationTime::Play { current_time, .. } => *current_time,
-            AnimationTime::Stop { stopped_time, .. } => *stopped_time,
-        };
         let root_color = tint
             .map(|tint| {
                 let (r, g, b, a) = tint.0.into_components();
@@ -111,7 +107,7 @@ impl<'s, U> AnimationNodes<U> {
         let pack = animation_storage.get(handle)?.pack(pack_id)?;
         let animation = pack.animation(animation_id)?;
 
-        let current_frame = animation.sec_to_frame(current_time);
+        let current_frame = time.play_frame(animation.fps() as f32);
 
         Self::make_animation_nodes(
             current_frame,

@@ -53,10 +53,6 @@ where
                 Some((&id, &pack, &anim)) => (id, pack, anim),
                 None => continue,
             };
-            let current_time = match time {
-                AnimationTime::Play { current_time, .. } => *current_time,
-                AnimationTime::Stop { stopped_time, .. } => *stopped_time,
-            };
             let animation = match animation_store
                 .get_animation_handle(&id)
                 .and_then(|handle| sprite_animation_storage.get(handle))
@@ -71,9 +67,13 @@ where
             };
 
             // ステート変化に関連する情報はルートにのみ入れる
-            let frame = animation.sec_to_frame(current_time);
+            let frame = time.play_frame(animation.fps() as f32);
             let root_user = animation.user(0, frame);
-            let rest_time = animation.total_secs() - current_time;
+            let rest_time = if frame >= animation.total_frame() {
+                None
+            } else {
+                Some(animation.total_frame() - frame)
+            };
 
             match T::translate_animation(e, rest_time, (&pack_id, &anim_id), root_user, &optional) {
                 Some((next_pack, next_anim, next_frame)) => {
@@ -102,7 +102,7 @@ where
                     }
                 }
                 None => {
-                    if rest_time <= 0. {
+                    if rest_time.is_none() {
                         // 再生時間を超えてたらイベント通知
                         channel.single_write(AnimationEvent::End {
                             entity: e,

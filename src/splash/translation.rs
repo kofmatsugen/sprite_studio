@@ -32,7 +32,7 @@ impl<'s> TranslateAnimation<'s> for SplashTranslation {
 
     fn translate_animation(
         _: Entity,
-        _: f32,
+        _: Option<usize>,
         _: (&Self::PackKey, &Self::AnimationKey),
         _: Option<&Self::UserData>,
         _: &Self::OptionalData,

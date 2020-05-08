@@ -23,22 +23,6 @@ impl<U> Animation<U> {
         self.total_frame
     }
 
-    pub fn total_secs(&self) -> f32 {
-        let float_fps = self.fps() as f32;
-        let float_frame = self.total_frame() as f32;
-        1.0 / float_fps * float_frame
-    }
-
-    pub fn sec_to_frame(&self, seconds: f32) -> usize {
-        let float_fps = self.fps() as f32;
-        (seconds * float_fps) as usize
-    }
-
-    pub fn sec_to_frame_loop(&self, seconds: f32) -> usize {
-        let float_fps = self.fps() as f32;
-        ((seconds * float_fps) as usize) % self.total_frame()
-    }
-
     pub fn hide(&self, part_id: usize, frame: usize) -> bool {
         log::trace!("[hide] id: {}, frame: {}", part_id, frame);
         self.parts_timelines[part_id].hide(frame)

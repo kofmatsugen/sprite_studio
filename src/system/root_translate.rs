@@ -73,23 +73,17 @@ fn update_root_translate<T>(
 where
     T: AnimationFile,
 {
+    if time.is_play() == false {
+        return None;
+    }
     let (id, pack_id, animation_id) = key.play_key()?;
 
     let handle = store.get_animation_handle(id)?;
     let pack = animation_storage.get(handle)?.pack(pack_id)?;
     let animation = pack.animation(animation_id)?;
 
-    let (current_time, prev_time) = match time {
-        AnimationTime::Play {
-            current_time,
-            prev_time,
-            ..
-        } => (*current_time, *prev_time),
-        AnimationTime::Stop { .. } => None?,
-    };
-
-    let current = animation.sec_to_frame(current_time);
-    let prev = prev_time.map(|prev_time| animation.sec_to_frame(prev_time));
+    let current = time.play_frame(animation.fps() as f32);
+    let prev = time.prev_frame(animation.fps() as f32);
 
     let current_transform = animation.local_transform(crate::constant::ROOT_PART_ID, current);
     let prev_transform = prev
@@ -107,7 +101,7 @@ where
         let vx = transform.scale().x * vx;
         let vy = transform.scale().y * vy;
 
-        log::info!(
+        log::trace!(
             "[{} F] root translate [{:?} F => {} F]: ({:.2}, {:.2})",
             frame_number,
             prev,

@@ -23,15 +23,37 @@ impl AnimationTime {
         }
     }
 
+    pub fn is_play(&self) -> bool {
+        match self {
+            AnimationTime::Play { .. } => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_stop(&self) -> bool {
+        match self {
+            AnimationTime::Stop { .. } => true,
+            _ => false,
+        }
+    }
+
     pub fn play<T: Into<Option<f32>>>(&mut self, speed: T) {
-        let time = match self {
-            AnimationTime::Play { current_time, .. } => *current_time,
-            AnimationTime::Stop { stopped_time, .. } => *stopped_time,
+        let (current_time, play_speed) = match self {
+            &mut AnimationTime::Play {
+                current_time,
+                play_speed,
+                ..
+            } => (current_time, play_speed),
+            &mut AnimationTime::Stop {
+                stopped_time,
+                play_speed,
+                ..
+            } => (stopped_time, play_speed),
         };
         *self = AnimationTime::Play {
-            current_time: time,
+            current_time,
             prev_time: None,
-            play_speed: speed.into().unwrap_or(1.),
+            play_speed: speed.into().unwrap_or(play_speed),
         }
     }
 
@@ -59,6 +81,34 @@ impl AnimationTime {
             stop_time,
             play_speed,
         }
+    }
+
+    pub fn play_time(&self) -> f32 {
+        match self {
+            &AnimationTime::Play { current_time, .. } => current_time,
+            &AnimationTime::Stop { stopped_time, .. } => stopped_time,
+        }
+    }
+
+    pub fn prev_time(&self) -> Option<f32> {
+        match self {
+            &AnimationTime::Play { prev_time, .. } => prev_time,
+            &AnimationTime::Stop { .. } => None,
+        }
+    }
+
+    pub fn play_frame(&self, fps: f32) -> usize {
+        let play_time = self.play_time();
+        let float_frame = play_time * fps;
+
+        float_frame.floor() as usize
+    }
+
+    pub fn prev_frame(&self, fps: f32) -> Option<usize> {
+        let prev_time = self.prev_time()?;
+        let float_frame = prev_time * fps;
+
+        Some(float_frame.floor() as usize)
     }
 
     pub fn set_play_speed(&mut self, speed: f32) {
@@ -91,6 +141,7 @@ impl AnimationTime {
                 prev_time,
                 current_time,
                 play_speed,
+                ..
             } => {
                 // 通常再生は速度を考慮
                 *prev_time = Some(*current_time);
@@ -101,11 +152,13 @@ impl AnimationTime {
                 play_speed,
                 stopped_time,
             } => {
-                // 停止時間に速度は関係ない
-                *time -= delta;
-                if *time <= 0. {
+                if *time > delta {
+                    *time -= delta;
+                } else {
                     // 停止時間を超えてたら再生開始
-                    stop_end_time = Some((*play_speed, -1. * *time + *stopped_time));
+                    // 超過分は再生速度を考慮する
+                    let play_frame = *stopped_time + (delta - *time) * *play_speed;
+                    stop_end_time = Some((*play_speed, play_frame));
                 }
             }
             _ => {}
