@@ -100,10 +100,9 @@ where
                             animation: next_anim,
                         });
                     }
-                    log::error!("frame: {}, rest_time: {}", frame, rest_time);
                 }
                 None => {
-                    if rest_time > 0. {
+                    if rest_time <= 0. {
                         // 再生時間を超えてたらイベント通知
                         channel.single_write(AnimationEvent::End {
                             entity: e,

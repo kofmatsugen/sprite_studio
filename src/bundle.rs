@@ -39,17 +39,18 @@ where
             "sprite_animation_processor",
             &[],
         );
+
         builder.add(
-            AnimationTransitionSystem::<T>::new(),
-            "animation_translate",
+            AnimationTimeIncrementSystem::new(),
+            "animation_time_increment",
             &[],
         );
 
         builder.add_barrier();
 
         builder.add(
-            AnimationTimeIncrementSystem::new(),
-            "animation_time_increment",
+            AnimationTransitionSystem::<T>::new(),
+            "animation_translate",
             &[],
         );
 
