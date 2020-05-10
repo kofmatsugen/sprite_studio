@@ -18,12 +18,12 @@ impl<T> AnimationKey for T where
 
 // ユーザーデータ，シリアライズ，送信安全性とデバッグ表示が保証されればユーザーデータとして使える
 pub trait AnimationUser:
-    'static + Send + Sync + Serialize + for<'de> Deserialize<'de> + Debug + Copy
+    'static + Send + Sync + Serialize + for<'de> Deserialize<'de> + Debug + Clone
 {
 }
 
 impl<T> AnimationUser for T where
-    T: 'static + Send + Sync + Serialize + Debug + for<'de> Deserialize<'de> + Copy
+    T: 'static + Send + Sync + Serialize + Debug + for<'de> Deserialize<'de> + Clone
 {
 }
 

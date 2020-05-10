@@ -290,7 +290,7 @@ impl<'s, U> AnimationNodes<U> {
             // ユーザーデータとはスプライトシートのハンドルをここでセット
             // ユーザーデータ
             if let Some(user) = animation.user(part_id, current_frame) {
-                node.set_user(*user);
+                node.set_user(user.clone());
             }
 
             // スプライトシート
