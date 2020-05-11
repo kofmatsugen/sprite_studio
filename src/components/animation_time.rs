@@ -120,16 +120,18 @@ impl AnimationTime {
     }
 
     pub fn set_play_time(&mut self, time: f32) {
-        if let AnimationTime::Play {
-            current_time,
-            prev_time,
-            ..
-        } = self
-        {
-            *current_time = time;
-            *prev_time = None;
-        } else {
-            log::warn!("play time set failed: {:?}", self);
+        match self {
+            AnimationTime::Play {
+                current_time,
+                prev_time,
+                ..
+            } => {
+                *current_time = time;
+                *prev_time = None;
+            }
+            AnimationTime::Stop { stopped_time, .. } => {
+                *stopped_time = time;
+            }
         }
     }
 

@@ -49,10 +49,6 @@ where
         ): Self::SystemData,
     ) {
         for (e, time) in (&*entities, &mut animation_times).join() {
-            if time.is_play() == false {
-                // アニメーションが停止中なら遷移もしない
-                continue;
-            }
             let (id, pack_id, anim_id) = match play_key.get(e).and_then(|key| key.play_key()) {
                 Some((&id, &pack, &anim)) => (id, pack, anim),
                 None => continue,
